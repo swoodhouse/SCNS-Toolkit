@@ -11,7 +11,7 @@ Two scripts are provided in the toolkit, for converting single cell gene express
 
 F# script which discretises a CSV file containing single cell gene expression data to binary expression values, and then constructs a state transition graph.
 
-The script produces CSV files for input to the synthesis engine and a .sif file for visualisation in Cytoscape (or a similar tool).
+The script produces CSV files for input to the synthesis engine and a SIF file for visualisation in Cytoscape (or a similar tool).
 
 #### genysis_perturbations.R
 R script which automates the process of running GenYsis (http://lsisrv5.epfl.ch/lsi/~garg/genysis_v2.html) on a model and performing all single-gene perturbations. The perturbed models are then compared to the wild-type model in terms of alterations to the stable states that the model is able to reach.
@@ -22,4 +22,4 @@ Both a failure to reach states normally reachable for the wild-type model, as we
 
 The SCNS Toolkit is released under the Apache 2.0 license; see LICENSE for more details.
 
-However, note that use of Z3 (which is used as the satisfiability solver) is bound by the Microsoft Research License Agreement (http://z3.codeplex.com/license) and is for Non-Commercial Use Only.
+However, note that use of Z3 (which is used as the satisfiability solver in the synthesis engine) is bound by the Microsoft Research License Agreement (http://z3.codeplex.com/license) and is for Non-Commercial Use Only.
