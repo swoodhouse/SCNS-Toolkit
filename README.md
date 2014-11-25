@@ -16,7 +16,7 @@ R script for Linux which automates the process of running GenYsis (http://lsisrv
 
 Both a failure to reach states normally reachable for the wild-type model, as well as stabilisation at novel "unnatural" states can be important, with the former mimicking for example the failure of a cell to develop down a given lineage, while the latter could be used to gain mechanistic understanding of pathological cellular states (such as in cancer cells). A summary of these results are collated into a CSV file.
 
-To run the script on combined_embryo_model.net, place genysis_perturbations.R in the genysis/ directory and combined_embryo_model.net in genysis/networks. Then use the command:
+To run the script on combined_embryo_model.net, place genysis_perturbations.R in the genysis/ directory and combined_embryo_model.net in genysis/networks/. Then use the command:
 ```
 Rscript genysis_perturbations.R combined_embryo_model
 ```
