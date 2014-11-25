@@ -12,10 +12,11 @@ F# script which discretises a CSV file containing single cell gene expression da
 The script produces CSV files for input to the synthesis engine and a SIF file for visualisation in Cytoscape (or a similar tool).
 
 ### genysis_perturbations.R
-R script which automates the process of running GenYsis (http://lsisrv5.epfl.ch/lsi/~garg/genysis_v2.html) on a model and performing all single-gene perturbations. The perturbed models are then compared to the wild-type model in terms of alterations to the stable states that the model is able to reach.
+R script for Linux which automates the process of running GenYsis (http://lsisrv5.epfl.ch/lsi/~garg/genysis_v2.html) on a model and performing all single-gene perturbations. The perturbed models are then compared to the wild-type model in terms of alterations to the stable states that the model is able to reach.
 
 Both a failure to reach states normally reachable for the wild-type model, as well as stabilisation at novel "unnatural" states can be important, with the former mimicking for example the failure of a cell to develop down a given lineage, while the latter could be used to gain mechanistic understanding of pathological cellular states (such as in cancer cells). A summary of these results are collated into a CSV file.
 
+To run the script on combined_embryo_model.net, place genysis_perturbations.R in the genysis/ directory and combined_embryo_model.net in genysis/networks. Then use the command:
 ```
 Rscript genysis_perturbations.R combined_embryo_model
 ```
