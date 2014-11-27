@@ -6,10 +6,16 @@ Single Cell Network Synthesis Toolkit
 ## Scripts
 Two scripts are provided in the toolkit, for converting single cell gene expression data into a format that can be handled by the synthesis engine, and for subsequent analysis of synthesised Boolean networks.
 
-### ConstructSTG.fsx
-F# script which discretises a CSV file containing single cell gene expression data to binary expression values, and then constructs a state transition graph.
+### constructSTG.fsx
+F# script which discretises a CSV file containing single cell gene expression data to binary expression values, and then constructs a state transition graph. The input CSV file must have genes as column names and unique cell identifiers as row names.
 
 The script produces CSV files for input to the synthesis engine and a SIF file for visualisation in Cytoscape (or a similar tool).
+
+To run the script on input.csv with a discretisation threshold of -15 (all expression values less than or equal to -15 will be considered unexpressed, all other values will be considered expressed) and output files of output.csv and output.sif:
+
+```
+fsi.exe --exec constructSTG.fsx -- input.csv -15 output.csv output.sif
+```
 
 ### genysis_perturbations.R
 R script for Linux which automates the process of running GenYsis (http://lsisrv5.epfl.ch/lsi/~garg/genysis_v2.html) on a model and performing all single-gene perturbations. The perturbed models are then compared to the wild-type model in terms of alterations to the stable states that the model is able to reach.
