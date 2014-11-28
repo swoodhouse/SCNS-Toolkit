@@ -1,4 +1,4 @@
-# Place in genysis/ directory, run as 'Rscript genysis_perturbations.R <network-file-name>'. Tested only on Linux
+# Place in genysis/ directory, run as 'Rscript genysis_perturbations.R <network-file-name>'
 # Takes the network file name (minus extension) as a command-line argument. This file must be in genysis/networks/
 networkFile = commandArgs(TRUE)
 
@@ -33,15 +33,15 @@ for (g in genes) {
 for (g in genes) {
   for (perturbation in c("KO", "OE")) {
     system(paste("./genYsis -p3 -f networks/", networkFile, ".net -e experiments/", networkFile, "_", g, perturbation, ".net", sep=""))
-    output.files = paste("results/", list.files("results/", paste(networkFile, "_SS_1_\\d+.txt", sep="")), sep="")
+    output.files = paste("results/", list.files("results/", paste("^", networkFile, "_SS_1_\\d+.txt", sep="")), sep="")
     for (i in 1:length(output.files)) {
       file.rename(output.files[i], paste("results/", networkFile, g, perturbation, "_", i, ".txt", sep=""))
     }
   }
 }
 
-# Build the output csv
-wt.files = paste("results/", list.files("results/", paste(networkFile, "_\\d+", sep="")), sep="")
+# build the output csv
+wt.files = paste("results/", list.files("results/", paste("^", networkFile, "_\\d+", sep="")), sep="")
 load.state = function (filename) {
   state = as.matrix(read.table(filename, skip=1, header=F, row.names=1))
   if (ncol(state) > 1) {
@@ -71,13 +71,11 @@ wt.state.retained = function(perturbation.states) {
 M <- rbind(c("Gene", "Perturbation", paste("WT-S", 1:ncol(wt.states), sep=""), "Number of non-WT states introduced"))
 for (g in genes) {
   for (perturbation in c("KO", "OE")) {
-    perturbation.files = paste("results/", list.files("results/", paste(networkFile, g, perturbation, "_\\d+.txt", sep="")), sep="")
+    perturbation.files = paste("results/", list.files("results/", paste("^", networkFile, g, perturbation, "_\\d+.txt", sep="")), sep="")
     perturbation.states = do.call(cbind, lapply(perturbation.files, load.state))
     retained.wt.states = apply(wt.states, 2, wt.state.retained(perturbation.states))
     num.non.wt = ncol(perturbation.states) - sum(retained.wt.states)
     M <- rbind(M, c(g, perturbation, retained.wt.states, num.non.wt))
   }
 }
-colnames(M) <- NULL
 write.table(M, paste(networkFile, "perturbations.csv"), row.names=F, col.names=F, sep=",")
-
