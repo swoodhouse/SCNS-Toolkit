@@ -1,10 +1,11 @@
 module Synthesis
 
-open DataLoading
+open FSharp.Data
+open Microsoft.Z3
 open SAT
+open DataLoading
 open FunctionEncoding
 open ShortestPaths
-open FSharp.Data
 
 type NumNonTransitionsEnforced = All | Num of int | DropFraction of int
 
