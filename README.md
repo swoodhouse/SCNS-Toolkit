@@ -1,7 +1,15 @@
-Single Cell Network Synthesis Toolkit
-============
+# Single Cell Network Synthesis Toolkit
+
+The SCNS Toolkit is a set of tools for the synthesis of Boolean gene regulatory networks from single cell gene expression experiments.  It was originally designed for single cell qPCR data but can also be used with RNA-seq. The toolkit produces binary gene expression values from measured data, which can be viewed as the state space of an asynchronous Boolean network. A synthesis algorithm is then used to identify the underlying Boolean logic between genes, from which networks can be built.  Network stable state analysis and in silico perturbations can be carried out to generate hypotheses about gene regulation and function.
 
 ## Synthesis Engine
+
+The synthesis engine is written in F# and uses the Z3 theorem prover. It compiles and runs on Windows and Linux with F# 3.1 and .NET 4.5 or Mono.
+
+After compiling, the following will run the synthesis engine on the provided example:
+```
+SynthesisEngine.exe "cmp.csv" "cmpEdges.csv" "cmp_initial.txt" "cmp_target.txt" "cmp_all_states.txt" <output_directory>
+```
 
 ## Scripts
 Two scripts are provided in the toolkit, for converting single cell gene expression data into a format that can be handled by the synthesis engine, and for subsequent analysis of synthesised Boolean networks.
