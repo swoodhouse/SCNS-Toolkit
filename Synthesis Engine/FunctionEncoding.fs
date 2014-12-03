@@ -92,7 +92,6 @@ let encodeUpdateFunction gene genes maxActivators maxRepressors =
 
     let a = [| for i in 1..7 -> makeCircuitVar (sprintf "a%i" i) |]
     let r = [| for i in 1..7 -> makeCircuitVar (sprintf "r%i" i) |]
-    let symVars = a ++ r
 
     let circuitEncoding = And <| [| variableDomains a.[0] 0 (NOTHING - 1)
                                     variableDomains r.[0] 0 NOTHING
@@ -120,12 +119,12 @@ let encodeUpdateFunction gene genes maxActivators maxRepressors =
                                     
                                     fixMaxActivators maxActivators
                                     fixMaxRepressors maxRepressors |]
-    (circuitEncoding, symVars)
+    (circuitEncoding, a, r)
  
 let private evaluateUpdateFunction = 
     let counter = ref 0
     
-    fun (symVars : BitVec []) (geneValues : bool []) ->
+    fun (aVars : BitVec []) (rVars : BitVec []) (geneValues : bool []) ->
         let i = !counter
         counter := i + 1
 
@@ -134,51 +133,51 @@ let private evaluateUpdateFunction =
         let intermediateValueVariablesA = [| for j in 1 .. 7 ->  Bool <| sprintf "va%i_%i" j i |]
         let intermediateValueVariablesR = [| for j in 1 .. 7 ->  Bool <| sprintf "vr%i_%i" j i |]
 
-        let andConstraints (variables : Bool []) pi c1i c2i =
+        let andConstraints (symVars : BitVec []) (variables : Bool []) pi c1i c2i =
             Implies (symVars.[pi] =. AND, variables.[pi] =. (variables.[c1i] &&. variables.[c2i]))
 
-        let orConstraints (variables : Bool []) pi c1i c2i =
+        let orConstraints (symVars : BitVec []) (variables : Bool []) pi c1i c2i =
             Implies (symVars.[pi] =. OR, variables.[pi] =. (variables.[c1i] ||. variables.[c2i]))
         
-        let variableConstraints (variables : Bool []) =
+        let variableConstraints (symVars : BitVec []) (intermediateVars : Bool []) =
             let f i symVar =
                 [| for v in 2 .. (NOTHING - 1) do
-                        yield Implies (symVar =. v, variables.[i] =. geneValues.[v - 2])
+                       yield Implies (symVar =. v, intermediateVars.[i] =. geneValues.[v - 2])
                 |] |> And
 
             Array.mapi f symVars |> And
 
         let circuitValue =
-            let noRepressors = symVars.[7] =. NOTHING
+            let noRepressors = rVars.[0] =. NOTHING
             If (noRepressors,
                 intermediateValueVariablesA.[0],
                 intermediateValueVariablesA.[0] &&. Not intermediateValueVariablesR.[0])
 
         let circuitVal = Bool <| sprintf "circuit_%i" i
                         
-        (And [| variableConstraints intermediateValueVariablesA
-                variableConstraints intermediateValueVariablesR
-                andConstraints intermediateValueVariablesA 0 1 2
-                andConstraints intermediateValueVariablesA 1 3 4
-                andConstraints intermediateValueVariablesA 2 5 6
-                andConstraints intermediateValueVariablesR 0 1 2
-                andConstraints intermediateValueVariablesR 1 3 4
-                andConstraints intermediateValueVariablesR 2 5 6
-                orConstraints intermediateValueVariablesA 0 1 2
-                orConstraints intermediateValueVariablesA 1 3 4
-                orConstraints intermediateValueVariablesA 2 5 6
-                orConstraints intermediateValueVariablesR 0 1 2
-                orConstraints intermediateValueVariablesR 1 3 4
-                orConstraints intermediateValueVariablesR 2 5 6
+        (And [| variableConstraints aVars intermediateValueVariablesA
+                variableConstraints rVars intermediateValueVariablesR
+                andConstraints aVars intermediateValueVariablesA 0 1 2
+                andConstraints aVars intermediateValueVariablesA 1 3 4
+                andConstraints aVars intermediateValueVariablesA 2 5 6
+                andConstraints rVars intermediateValueVariablesR 0 1 2
+                andConstraints rVars intermediateValueVariablesR 1 3 4
+                andConstraints rVars intermediateValueVariablesR 2 5 6
+                orConstraints aVars intermediateValueVariablesA 0 1 2
+                orConstraints aVars intermediateValueVariablesA 1 3 4
+                orConstraints aVars intermediateValueVariablesA 2 5 6
+                orConstraints rVars intermediateValueVariablesR 0 1 2
+                orConstraints rVars intermediateValueVariablesR 1 3 4
+                orConstraints rVars intermediateValueVariablesR 2 5 6
 
                 circuitVal =. circuitValue|], circuitVal)
 
-let circuitEvaluatesToSame gene symVars (profile : bool []) =
+let circuitEvaluatesToSame gene aVars rVars (profile : bool []) =
     let b = toBool profile.[gene - 2]
-    let evaluationEncoding, circuitVal = evaluateUpdateFunction symVars profile
+    let evaluationEncoding, circuitVal = evaluateUpdateFunction aVars rVars profile
     (evaluationEncoding, circuitVal =. b)
             
-let circuitEvaluatesToDifferent gene symVars (profile : bool []) =
+let circuitEvaluatesToDifferent gene aVars rVars (profile : bool []) =
     let b = toBool profile.[gene - 2]
-    let evaluationEncoding, circuitVal = evaluateUpdateFunction symVars profile
+    let evaluationEncoding, circuitVal = evaluateUpdateFunction aVars rVars profile
     (evaluationEncoding, circuitVal =. Not b)
