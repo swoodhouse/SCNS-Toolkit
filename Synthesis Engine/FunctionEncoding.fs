@@ -181,3 +181,20 @@ let circuitEvaluatesToDifferent gene aVars rVars (profile : bool []) =
     let b = toBool profile.[gene - 2]
     let evaluationEncoding, circuitVal = evaluateUpdateFunction aVars rVars profile
     (evaluationEncoding, circuitVal =. Not b)
+
+let solutionToCircuit (geneNames : string []) (activatorAssignment : seq<int>) (repressorAssignment : seq<int>) =
+    let leftChild i = ((i + 1) * 2) - 1
+    let rightChild i = leftChild i + 1
+    let toCircuit assignment =
+        let rec toCircuit i =
+            match Seq.nth i assignment with
+            | AND -> Circuit.And (toCircuit <| leftChild i, toCircuit <| rightChild i)
+            | OR -> Circuit.Or (toCircuit <| leftChild i, toCircuit <| rightChild i)
+            | n when n = NOTHING -> failwith "solutionToCircuit pattern match error"
+            | var -> Circuit.Node (geneNames.[var - 2])            
+        toCircuit 0
+
+    if Seq.head repressorAssignment = NOTHING then
+        toCircuit activatorAssignment
+    else
+        toCircuit activatorAssignment |> Circuit.inhibition (toCircuit repressorAssignment)
