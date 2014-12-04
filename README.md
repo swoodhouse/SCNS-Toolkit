@@ -8,7 +8,7 @@ The synthesis engine is written in F# and uses the Z3 theorem prover. It compile
 
 After compiling, the following will run the synthesis engine on the provided example:
 ```
-SynthesisEngine.exe "cmp.csv" "cmpEdges.csv" "cmp_initial.txt" "cmp_target.txt" "cmp_all_states.txt" <output_directory>
+SynthesisEngine.exe cmp.csv cmpEdges.csv cmpParameters.csv cmp_initial.txt cmp_target.txt cmp_all_states.txt <output_directory>
 ```
 
 ## Scripts
