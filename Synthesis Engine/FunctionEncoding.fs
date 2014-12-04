@@ -56,8 +56,7 @@ let private parentsOfRestAreGates (a : BitVec []) (r : BitVec []) =
 
 let private variablesDoNotAppearMoreThanOnce symVars =
     let isVar (v : BitVec) = And [| v <>. NOTHING; v <>. AND; v <>. OR |]
-    let notEqual v vars = let a = List.map ((<>.) v) vars
-                          a |> And
+    let notEqual v vars = List.map ((<>.) v) vars |> And
     let doesNotAppearMoreThanOnce (v : BitVec) = 
         (isVar v) =>. (notEqual v (delete v symVars))
     Seq.map doesNotAppearMoreThanOnce symVars |> And
