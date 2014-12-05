@@ -4,7 +4,7 @@ The SCNS Toolkit is a set of tools for the synthesis of Boolean gene regulatory 
 
 ## Synthesis Engine
 
-The synthesis engine is written in F# and uses the Z3 theorem prover. It compiles and runs on Windows and Linux with F# 3.1 and .NET 4.5 or Mono.
+The synthesis engine is written in F# and uses the Z3 theorem prover. It compiles and runs on Windows and Linux with F# 3.1 and .NET 4.5 or Mono 3.10.
 
 After compiling, the following will run the synthesis engine on the provided example:
 ```
