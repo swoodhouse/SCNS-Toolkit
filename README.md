@@ -1,6 +1,6 @@
 # Single Cell Network Synthesis Toolkit
 
-The SCNS Toolkit is a set of tools for the synthesis of Boolean gene regulatory networks from single cell gene expression experiments.  It was originally designed for single cell qPCR data but can also be used with RNA-seq. The toolkit produces binary gene expression values from measured data, which can be viewed as the state space of an asynchronous Boolean network. A synthesis algorithm is then used to identify the underlying Boolean logic between genes, from which networks can be built.  Network stable state analysis and in silico perturbations can be carried out to generate hypotheses about gene regulation and function.
+[The SCNS Toolkit](http://scns.stemcells.cam.ac.uk/) is a set of tools for the synthesis of Boolean gene regulatory networks from single cell gene expression experiments.  It was originally designed for single cell qPCR data but can also be used with RNA-seq. The toolkit produces binary gene expression values from measured data, which can be viewed as the state space of an asynchronous Boolean network. A synthesis algorithm is then used to identify the underlying Boolean logic between genes, from which networks can be built.  Network stable state analysis and in silico perturbations can be carried out to generate hypotheses about gene regulation and function.
 
 ## Synthesis Engine
 
