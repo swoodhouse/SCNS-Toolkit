@@ -39,6 +39,8 @@ To run the script on `combined_embryo_model.net`, place `genysis_perturbations.R
 Rscript genysis_perturbations.R combined_embryo_model
 ```
 
+R can be downloaded from [http://www.r-project.org/](http://www.r-project.org/)
+
 ## License
 The SCNS Toolkit is released under the Apache 2.0 license; see LICENSE for more details.
 
