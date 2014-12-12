@@ -4,7 +4,7 @@
 
 ## Synthesis Engine
 
-The synthesis engine is written in F# and uses the Z3 theorem prover. It compiles and runs on Windows and Linux with F# 3.1 and .NET 4.5 or Mono 3.10.
+The synthesis engine is written in F# and uses the Z3 theorem prover. It compiles and runs on Windows with F# 3.1 and .NET 4.5.
 
 To build on Windows with Visual Studio 2013, open SynthesisEngine.sln and then select `Build -> Build Solution`. You may be prompted to give permissions to FSharp.Data type providers.
 
@@ -21,7 +21,7 @@ F# script which discretises a CSV file containing single cell gene expression da
 
 The script produces CSV files for input to the synthesis engine and a SIF file for visualisation in Cytoscape (or a similar tool).
 
-To run the script on input.csv with a discretisation threshold of 25 (all expression values greater than or equal to 25 will be considered unexpressed, all other values will be considered expressed) and output files of outputStates.csv, outputEdges.csv and output.sif:
+On Windows, to run the script on input.csv with a discretisation threshold of 25 (all expression values greater than or equal to 25 will be considered unexpressed, all other values will be considered expressed) and output files of outputStates.csv, outputEdges.csv and output.sif:
 
 ```
 fsi.exe --exec constructSTG.fsx -- input.csv 25 outputStates.csv outputEdges.csv output.sif
