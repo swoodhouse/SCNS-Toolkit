@@ -62,7 +62,8 @@ let private findAllowedEdges (solver : Solver) gene genes (geneNames : string []
     let manyNonTransitionsEnforced = manyNonTransitionsEnforced gene aVars rVars expressionProfilesWithoutGeneTransitions numNonTransitionsEnforced
 
     let encodeTransition stateA =
-        let profile s = expressionProfilesWithGeneTransitions.Filter(fun row -> row.Columns.[0] = s).Rows |> Seq.head |> rowToArray let differentA = (let e, v = circuitEvaluatesToDifferent gene aVars rVars (profile stateA) in e &&. v)
+        let profile s = expressionProfilesWithGeneTransitions.Filter(fun row -> row.Columns.[0] = s).Rows |> Seq.head |> rowToArray
+        let differentA = (let e, v = circuitEvaluatesToDifferent gene aVars rVars (profile stateA) in e &&. v)
 
         differentA
 
