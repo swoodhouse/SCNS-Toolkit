@@ -21,7 +21,7 @@ F# script which discretises a CSV file containing single cell gene expression da
 
 The script produces CSV files for input to the synthesis engine and a SIF file for visualisation in Cytoscape (or a similar tool).
 
-On Windows, to run the script on input.csv with a discretisation threshold of 25 (all expression values greater than or equal to 25 will be considered unexpressed, all other values will be considered expressed) and output files of outputStates.csv, outputEdges.csv and output.sif:
+On Windows, to run the script on input.csv with a discretisation threshold of 15 (all expression values greater than or equal to 15 will be considered unexpressed, all other values will be considered expressed) and output files of outputStates.csv, outputEdges.csv and output.sif:
 
 ```
 fsi.exe --exec constructSTG.fsx input.csv 15 outputStates.csv outputEdges.csv output.sif
