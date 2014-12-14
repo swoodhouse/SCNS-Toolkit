@@ -17,17 +17,19 @@ SynthesisEngine.exe cmpStates.csv cmpEdges.csv cmpParameters.csv cmp_initial_sta
 Two scripts are provided in the toolkit, for converting single cell gene expression data into a format that can be handled by the synthesis engine, and for subsequent analysis of synthesised Boolean networks.
 
 ### constructSTG.fsx
-F# script which discretises a CSV file containing single cell gene expression data to binary expression values, and then constructs a state transition graph. The input CSV file must have genes as column names and unique cell identifiers as row names.
+F# script for Windows or Linux which discretises a CSV file containing single cell gene expression data to binary expression values, and then constructs a state transition graph. The input CSV file must have genes as column names and unique cell identifiers as row names.
 
 The script produces CSV files for input to the synthesis engine and a SIF file for visualisation in Cytoscape (or a similar tool).
 
-On Windows, to run the script on input.csv with a discretisation threshold of 15 (all expression values greater than or equal to 15 will be considered unexpressed, all other values will be considered expressed) and output files of outputStates.csv, outputEdges.csv and output.sif:
+To run the script on input.csv with a discretisation threshold of 25 (all expression values greater than or equal to 25 will be considered unexpressed, all other values will be considered expressed) and output files of outputStates.csv, outputEdges.csv and output.sif:
 
 ```
-fsi.exe --exec constructSTG.fsx input.csv 15 outputStates.csv outputEdges.csv output.sif
+fsi.exe --exec constructSTG.fsx input.csv 25 outputStates.csv outputEdges.csv output.sif
 ```
 
 On Windows, `fsi.exe` can be found in `C:\Program Files (x86)\Microsoft SDKs\F#\<version>\Framework\<version>\` after installing F#.
+
+On Linux, substitute ``fsharpi`` for ``fsi.exe``.
 
 ### genysis_perturbations.R
 R script for Linux which automates the process of running GenYsis (http://lsisrv5.epfl.ch/lsi/~garg/genysis_v2.html) on a model and performing all single-gene perturbations. The perturbed models are then compared to the wild-type model in terms of alterations to the stable states that the model is able to reach.
