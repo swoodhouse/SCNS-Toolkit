@@ -23,7 +23,9 @@ let statesWithGeneTransitions =
     let csv = EdgeChanges.Load(EDGES_FILENAME)
     fun gene ->
         let rowsWhereGeneChanges = csv.Filter (fun row -> row.Gene = gene)
-        Seq.map (fun (r : EdgeChanges.Row) -> r.StateA) rowsWhereGeneChanges.Rows |> Set.ofSeq
+        set [ for r in rowsWhereGeneChanges.Rows do
+                  yield r.StateA
+                  yield r.StateB ]
 
 let getExpressionProfiles (statesFilename : string) nonTransitionEnforcedStates (geneNames : string []) =
     let csv = CsvFile.Load(statesFilename).Cache()
