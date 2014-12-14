@@ -7,12 +7,12 @@ open FSharp.Data
 open FSharpx.Collections
 
 if Array.length fsi.CommandLineArgs <> 6 then
-    failwith "Incorrect number of arguments. Correct format: fsi.exe --exec constructSTG.fsx input.csv 15 outputStates.csv outputEdges.csv output.sif"
+    failwith "Incorrect number of arguments. Correct format: fsi.exe --exec constructSTG.fsx input.csv 25 outputStates.csv outputEdges.csv output.sif"
 
 let loadCsv (filename : string) =
     let csv = CsvFile.Load(filename)
-    if csv.NumberOfColumns >= 63 then
-        failwith "constructSTG.fsx does not support datasets with more than 63 genes"
+    if csv.NumberOfColumns >= 64 then
+        failwith "constructSTG.fsx does not support datasets with more than 64 genes"
 
     let parseRow (r : CsvRow) =
         (r.GetColumn 0,  [| for i in 1 .. csv.NumberOfColumns - 1 do
@@ -43,7 +43,7 @@ let boolArrayToUint64 (a : bool []) =
     if Array.length a <= 32 then
         uint64 (boolArrayToUint32 a)
     else
-        let high = boolArrayToUint32 a.[0 .. 31]
+        let high = boolArrayToUint32 a.[.. 31]
         let low = boolArrayToUint32 a.[32 ..]
         (uint64 high <<< (Array.length a.[32 ..])) ||| uint64 low
 
