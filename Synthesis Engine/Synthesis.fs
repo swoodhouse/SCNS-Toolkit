@@ -190,4 +190,4 @@ let synthesise geneIds geneNames geneParameters statesFilename initialStates tar
     geneNames |> Array.iter (fun gene -> let numAct, numRep = Map.find gene geneParameters
                                          let expressionProfilesWithGeneTransitions, expressionProfilesWithoutGeneTransitions = getExpressionProfiles (f gene)
                                          let circuits = findFunctions solver (f gene) geneIds geneNames numAct numRep All invertedPaths expressionProfilesWithGeneTransitions expressionProfilesWithoutGeneTransitions
-                                         System.IO.File.WriteAllLines (outputDir + gene + ".txt", Seq.map (sprintf "%A") circuits))
+                                         System.IO.File.WriteAllLines (outputDir + "/" + gene + ".txt", Seq.map (sprintf "%A") circuits))

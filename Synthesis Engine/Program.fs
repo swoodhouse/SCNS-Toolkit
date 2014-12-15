@@ -21,6 +21,10 @@ let synth (statesFilename : string) edgesFilename (parametersFilename : string) 
     
 [<EntryPoint>]
 let main args =
+    if Array.length args <> 7 then
+        failwith "Incorrect number of arguments. Correct format:\n\
+                  SynthesisEngine.exe cmpStates.csv cmpEdges.csv cmpParameters.csv cmp_initial_states.txt cmp_target_states.txt cmp_all_states.txt <output_directory>"
+    
     synth args.[0] args.[1] args.[2] args.[3] args.[4] args.[5] args.[6]
 
     0
