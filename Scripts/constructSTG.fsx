@@ -11,8 +11,8 @@ if Array.length fsi.CommandLineArgs <> 6 then
 
 let loadCsv (filename : string) =
     let csv = CsvFile.Load(filename)
-    if csv.NumberOfColumns >= 64 then
-        failwith "constructSTG.fsx does not support datasets with more than 64 genes"
+    if csv.NumberOfColumns >= 63 then
+        failwith "constructSTG.fsx does not support datasets with more than 63 genes"
 
     let parseRow (r : CsvRow) =
         (r.GetColumn 0,  [| for i in 1 .. csv.NumberOfColumns - 1 do
