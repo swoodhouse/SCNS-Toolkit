@@ -19,12 +19,14 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
     <Reference Include="System.Xml.Linq" />
+    <Reference Include="Z3Fs">
+      <HintPath>lib\Z3Fs.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Circuit.fs" />
     <Compile Include="ShortestPaths.fs" />
     <Compile Include="DataLoading.fs" />
-    <Compile Include="SAT.fs" />
     <Compile Include="FunctionEncoding.fs" />
     <Compile Include="Synthesis.fs" />
     <Compile Include="Program.fs" />

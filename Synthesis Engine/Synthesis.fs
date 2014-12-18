@@ -2,7 +2,8 @@ module Synthesis
 
 open FSharp.Data
 open Microsoft.Z3
-open SAT
+open Microsoft.Z3.FSharp.Common
+open Microsoft.Z3.FSharp.Bool
 open DataLoading
 open FunctionEncoding
 open ShortestPaths

@@ -2,7 +2,11 @@ module FunctionEncoding
 
 open FSharp.Data
 open DataLoading
-open SAT
+open Microsoft.Z3.FSharp.Common
+open Microsoft.Z3.FSharp.Bool
+open Microsoft.Z3.FSharp.BitVec
+
+let toBool b = if b then True else False
 
 let rec private delete x = function
   | [] -> []
@@ -56,10 +60,10 @@ let private parentsOfRestAreGates (a : BitVec []) (r : BitVec []) =
 
 let private variablesDoNotAppearMoreThanOnce symVars =
     let isVar (v : BitVec) = And [| v <>. NOTHING; v <>. AND; v <>. OR |]
-    let notEqual v vars = List.map ((<>.) v) vars |> And
+    let notEqual v vars = List.map ((<>.) v) vars |> Array.ofList |> And
     let doesNotAppearMoreThanOnce (v : BitVec) = 
         (isVar v) =>. (notEqual v (delete v symVars))
-    Seq.map doesNotAppearMoreThanOnce symVars |> And
+    List.map doesNotAppearMoreThanOnce symVars |> Array.ofList |> And
 
 let private enforceSiblingLexigraphicalOrdering (v1 : BitVec) (v2 : BitVec) =
     v1 <=. v2
