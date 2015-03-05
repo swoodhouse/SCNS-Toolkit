@@ -14,7 +14,7 @@ let synth (statesFilename : string) edgesFilename (parametersFilename : string) 
     let nonTransitionEnforcedStates = readLines nonTransitionsNodesFilename |> Set.ofArray
 
     let geneParameters = CsvFile.Load(parametersFilename).Rows
-                      |> Seq.map (fun (row : CsvRow) -> row.GetColumn 0, (System.Int32.Parse <| row.GetColumn 1, System.Int32.Parse <| row.GetColumn 2))
+                      |> Seq.map (fun (row : CsvRow) -> row.GetColumn 0, (System.Int32.Parse <| row.GetColumn 1, System.Int32.Parse <| row.GetColumn 2, System.Int32.Parse <| row.GetColumn 3))
                       |> Map.ofSeq
 
     Synthesis.synthesise geneIds geneNames geneParameters statesFilename initialStates targetStates nonTransitionEnforcedStates outputDir

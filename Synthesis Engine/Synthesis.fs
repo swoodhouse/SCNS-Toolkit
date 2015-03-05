@@ -57,9 +57,10 @@ let private findAllowedEdges (solver : Solver) gene genes (geneNames : string []
         | All -> expressionProfilesWithoutGeneTransitions |> Seq.length
         | Num i -> i
         | DropFraction i -> let max = expressionProfilesWithoutGeneTransitions |> Seq.length
-                            max - max / i
+                            if i = 0 then max else max - max / i
 
-    let undirectedEdges = geneTransitions geneNames.[gene - 2] |> Set.ofArray
+
+    let undirectedEdges = geneTransitions geneNames.[gene - 2]
     let manyNonTransitionsEnforced = manyNonTransitionsEnforced gene aVars rVars expressionProfilesWithoutGeneTransitions numNonTransitionsEnforced
 
     let encodeTransition stateA =
@@ -112,14 +113,14 @@ let private findFunctions (solver : Solver) gene genes (geneNames : string []) m
                           (expressionProfilesWithGeneTransitions : Runtime.CsvFile<CsvRow>) (expressionProfilesWithoutGeneTransitions : Runtime.CsvFile<CsvRow>) =
     let circuitEncoding, aVars, rVars = encodeUpdateFunction gene genes maxActivators maxRepressors
     let expressionProfilesWithoutGeneTransitions = Seq.map rowToArray expressionProfilesWithoutGeneTransitions.Rows
-    let undirectedEdges = geneTransitions geneNames.[gene - 2] |> Set.ofArray
+    let undirectedEdges = geneTransitions geneNames.[gene - 2]
     
     let numNonTransitionsEnforced =
         match numNonTransitionsEnforced with
         | All -> expressionProfilesWithoutGeneTransitions |> Seq.length
         | Num i -> i
         | DropFraction i -> let max = expressionProfilesWithoutGeneTransitions |> Seq.length
-                            max - max / i
+                            if i = 0 then max else max - max / i
 
     let encodeTransition (stateA, stateB) =
         if not (Set.contains (stateA, stateB) undirectedEdges || Set.contains (stateB, stateA) undirectedEdges)
@@ -170,9 +171,9 @@ let synthesise geneIds geneNames geneParameters statesFilename initialStates tar
     let getExpressionProfiles = getExpressionProfiles statesFilename nonTransitionEnforcedStates geneNames
     let solver = Solver()
 
-    let allowedEdges = geneNames |> Array.map (fun g -> let a, r = Map.find g geneParameters
+    let allowedEdges = geneNames |> Array.map (fun g -> let a, r, t = Map.find g geneParameters
                                                         let expressionProfilesWithGeneTransitions, expressionProfilesWithoutGeneTransitions = getExpressionProfiles (f g)
-                                                        findAllowedEdges solver (f g) geneIds geneNames a r All expressionProfilesWithGeneTransitions expressionProfilesWithoutGeneTransitions)
+                                                        findAllowedEdges solver (f g) geneIds geneNames a r (DropFraction t) expressionProfilesWithGeneTransitions expressionProfilesWithoutGeneTransitions)
                                  |> Set.unionMany
 
     let reducedStateGraph = buildGraph allowedEdges
@@ -188,7 +189,7 @@ let synthesise geneIds geneNames geneParameters statesFilename initialStates tar
                                                | [] -> ()
                                                | l -> if List.nth l (List.length l - 1) = targetStates.[i] then yield l ] |]
 
-    geneNames |> Array.iter (fun gene -> let numAct, numRep = Map.find gene geneParameters
+    geneNames |> Array.iter (fun gene -> let a, r, t = Map.find gene geneParameters
                                          let expressionProfilesWithGeneTransitions, expressionProfilesWithoutGeneTransitions = getExpressionProfiles (f gene)
-                                         let circuits = findFunctions solver (f gene) geneIds geneNames numAct numRep All invertedPaths expressionProfilesWithGeneTransitions expressionProfilesWithoutGeneTransitions
+                                         let circuits = findFunctions solver (f gene) geneIds geneNames a r (DropFraction t) invertedPaths expressionProfilesWithGeneTransitions expressionProfilesWithoutGeneTransitions
                                          System.IO.File.WriteAllLines (outputDir + "/" + gene + ".txt", Seq.map (sprintf "%A") circuits))

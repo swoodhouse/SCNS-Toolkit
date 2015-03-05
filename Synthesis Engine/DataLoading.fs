@@ -14,10 +14,10 @@ let geneTransitions =
         let rowsWhereGeneChanges = csv.Filter(fun row -> row.Gene = gene).Rows
         let seen = System.Collections.Generic.HashSet<string>()
 
-        [| for row in rowsWhereGeneChanges do
-            if not (seen.Contains row.StateB) then
-                seen.Add(row.StateA) |> ignore
-                yield (row.StateA, row.StateB) |]
+        set [ for row in rowsWhereGeneChanges do
+                  if not (seen.Contains row.StateB) then
+                      seen.Add(row.StateA) |> ignore
+                      yield (row.StateA, row.StateB) ]
 
 let statesWithGeneTransitions =
     let csv = EdgeChanges.Load(EDGES_FILENAME)
