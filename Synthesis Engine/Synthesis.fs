@@ -8,22 +8,19 @@ open DataLoading
 open FunctionEncoding
 open ShortestPaths
 
-type NumNonTransitionsEnforced = All | Num of int | DropFraction of int
-
 let private constraintsBitVec ctor (m : Model) (d : FuncDecl) =
     let x = System.Int32.Parse(m.[d].ToString())
     (ctor (d.Name.ToString())) <>. x
 
-let private addConstraintsCircuitVar (solver : Solver) (m : Model) (ds : FuncDecl []) =
-    let constraints = Or <| Array.map (constraintsBitVec makeCircuitVar m) ds
-    solver.Add(constraints)
+let private constraintsCircuitVar (solver : Solver) (m : Model) (ds : FuncDecl []) =
+    Or <| Array.map (constraintsBitVec makeCircuitVar m) ds
 
 let private buildGraph edges =
-    let mutable adjacency = Map.empty
-    for (u, v) in edges do
-        let something = if Map.containsKey u adjacency then v :: Map.find u adjacency else [v]
-        adjacency <- Map.add u something adjacency
-    adjacency
+    let build graph (u, v) =
+        let neighbours = if Map.containsKey u graph then v :: Map.find u graph else [v]
+        Map.add u neighbours graph
+
+    Seq.fold build Map.empty edges
 
 let private askNonTransition gene aVars rVars =
     let counter = ref 0
@@ -45,7 +42,7 @@ let private manyNonTransitionsEnforced gene aVars rVars expressionProfilesWithou
 
         askNonTransitions &&. manyEnforced
 
-let private findAllowedEdges (solver : Solver) gene genes (geneNames : string []) maxActivators maxRepressors numNonTransitionsEnforced
+let private findAllowedEdges (solver : Solver) gene genes (geneNames : string []) maxActivators maxRepressors thresholdFraction
                              (expressionProfilesWithGeneTransitions : Runtime.CsvFile<CsvRow>) (expressionProfilesWithoutGeneTransitions : Runtime.CsvFile<CsvRow>) =
     let seenEdges = System.Collections.Generic.HashSet<string * string>()
 
@@ -53,12 +50,8 @@ let private findAllowedEdges (solver : Solver) gene genes (geneNames : string []
     let expressionProfilesWithoutGeneTransitions = Seq.map rowToArray expressionProfilesWithoutGeneTransitions.Rows
 
     let numNonTransitionsEnforced =
-        match numNonTransitionsEnforced with
-        | All -> expressionProfilesWithoutGeneTransitions |> Seq.length
-        | Num i -> i
-        | DropFraction i -> let max = expressionProfilesWithoutGeneTransitions |> Seq.length
-                            if i = 0 then max else max - max / i
-
+        let max = expressionProfilesWithoutGeneTransitions |> Seq.length
+        if thresholdFraction = 0 then max else max - max / thresholdFraction
 
     let undirectedEdges = geneTransitions geneNames.[gene - 2]
     let manyNonTransitionsEnforced = manyNonTransitionsEnforced gene aVars rVars expressionProfilesWithoutGeneTransitions numNonTransitionsEnforced
@@ -109,18 +102,15 @@ let private findAllowedEdges (solver : Solver) gene genes (geneNames : string []
               if checkEdge (a, b) then yield (a, b)
               if checkEdge (b, a) then yield (b, a) ]
 
-let private findFunctions (solver : Solver) gene genes (geneNames : string []) maxActivators maxRepressors numNonTransitionsEnforced shortestPaths
+let private findFunctions (solver : Solver) gene genes (geneNames : string []) maxActivators maxRepressors thresholdFraction shortestPaths
                           (expressionProfilesWithGeneTransitions : Runtime.CsvFile<CsvRow>) (expressionProfilesWithoutGeneTransitions : Runtime.CsvFile<CsvRow>) =
     let circuitEncoding, aVars, rVars = encodeUpdateFunction gene genes maxActivators maxRepressors
     let expressionProfilesWithoutGeneTransitions = Seq.map rowToArray expressionProfilesWithoutGeneTransitions.Rows
     let undirectedEdges = geneTransitions geneNames.[gene - 2]
     
     let numNonTransitionsEnforced =
-        match numNonTransitionsEnforced with
-        | All -> expressionProfilesWithoutGeneTransitions |> Seq.length
-        | Num i -> i
-        | DropFraction i -> let max = expressionProfilesWithoutGeneTransitions |> Seq.length
-                            if i = 0 then max else max - max / i
+        let max = expressionProfilesWithoutGeneTransitions |> Seq.length
+        if thresholdFraction = 0 then max else max - max / thresholdFraction
 
     let encodeTransition (stateA, stateB) =
         if not (Set.contains (stateA, stateB) undirectedEdges || Set.contains (stateB, stateA) undirectedEdges)
@@ -155,7 +145,7 @@ let private findFunctions (solver : Solver) gene genes (geneNames : string []) m
                 let m = solver.Model
 
                 let circuitDecls = Array.filter (fun (d : FuncDecl) -> Set.contains (d.Name.ToString()) circuitVars) m.ConstDecls
-                addConstraintsCircuitVar solver m circuitDecls
+                solver.Add(constraintsCircuitVar solver m circuitDecls)
 
                 let enforceDecls = Array.filter (fun (d : FuncDecl) -> d.Name.ToString().StartsWith "enforced") m.ConstDecls
                 let numEnforced = List.sum <| [ for d in enforceDecls do yield System.Int32.Parse (string m.[d]) ]
@@ -173,7 +163,7 @@ let synthesise geneIds geneNames geneParameters statesFilename initialStates tar
 
     let allowedEdges = geneNames |> Array.map (fun g -> let a, r, t = Map.find g geneParameters
                                                         let expressionProfilesWithGeneTransitions, expressionProfilesWithoutGeneTransitions = getExpressionProfiles (f g)
-                                                        findAllowedEdges solver (f g) geneIds geneNames a r (DropFraction t) expressionProfilesWithGeneTransitions expressionProfilesWithoutGeneTransitions)
+                                                        findAllowedEdges solver (f g) geneIds geneNames a r t expressionProfilesWithGeneTransitions expressionProfilesWithoutGeneTransitions)
                                  |> Set.unionMany
 
     let reducedStateGraph = buildGraph allowedEdges
@@ -191,5 +181,5 @@ let synthesise geneIds geneNames geneParameters statesFilename initialStates tar
 
     geneNames |> Array.iter (fun gene -> let a, r, t = Map.find gene geneParameters
                                          let expressionProfilesWithGeneTransitions, expressionProfilesWithoutGeneTransitions = getExpressionProfiles (f gene)
-                                         let circuits = findFunctions solver (f gene) geneIds geneNames a r (DropFraction t) invertedPaths expressionProfilesWithGeneTransitions expressionProfilesWithoutGeneTransitions
+                                         let circuits = findFunctions solver (f gene) geneIds geneNames a r t invertedPaths expressionProfilesWithGeneTransitions expressionProfilesWithoutGeneTransitions
                                          System.IO.File.WriteAllLines (outputDir + "/" + gene + ".txt", Seq.map (sprintf "%A") circuits))
