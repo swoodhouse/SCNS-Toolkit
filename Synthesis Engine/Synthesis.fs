@@ -12,7 +12,7 @@ let private constraintsBitVec ctor (m : Model) (d : FuncDecl) =
     let x = System.Int32.Parse(m.[d].ToString())
     (ctor (d.Name.ToString())) <>. x
 
-let private constraintsCircuitVar (solver : Solver) (m : Model) (ds : FuncDecl []) =
+let private constraintsCircuitVar (m : Model) (ds : FuncDecl []) =
     Or <| Array.map (constraintsBitVec makeCircuitVar m) ds
 
 let private buildGraph edges =
@@ -145,7 +145,7 @@ let private findFunctions (solver : Solver) gene genes (geneNames : string []) m
                 let m = solver.Model
 
                 let circuitDecls = Array.filter (fun (d : FuncDecl) -> Set.contains (d.Name.ToString()) circuitVars) m.ConstDecls
-                solver.Add(constraintsCircuitVar solver m circuitDecls)
+                solver.Add(constraintsCircuitVar m circuitDecls)
 
                 let enforceDecls = Array.filter (fun (d : FuncDecl) -> d.Name.ToString().StartsWith "enforced") m.ConstDecls
                 let numEnforced = List.sum <| [ for d in enforceDecls do yield System.Int32.Parse (string m.[d]) ]
