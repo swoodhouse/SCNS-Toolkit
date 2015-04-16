@@ -7,7 +7,8 @@ open FSharp.Data
 open FSharpx.Collections
 
 if Array.length fsi.CommandLineArgs <> 6 then
-    failwith "Incorrect number of arguments. Correct format: fsi.exe --exec constructSTG.fsx input.csv 25 outputStates.csv outputEdges.csv output.sif"
+    failwith "Incorrect number of arguments.\
+              Correct format: fsi.exe --exec constructSTG.fsx input.csv 25 outputStates.csv outputEdges.csv output.sif"
 
 let loadCsv (filename : string) =
     let csv = CsvFile.Load(filename)
