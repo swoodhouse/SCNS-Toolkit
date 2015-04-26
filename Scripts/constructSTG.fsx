@@ -1,4 +1,4 @@
-﻿#r "FSharp.Data.dll"
+#r "FSharp.Data.dll"
 #r "FSharpx.Core.dll"
 
 open System.Collections
@@ -34,13 +34,12 @@ let discretise rows =
     Seq.map (fun (id, a) -> (id, Array.map discretise a)) rows
 
 let boolArrayToUint32 (a : bool []) =
-    let a = Array.rev a
-    let x = BitArray a
+    let a = BitArray (Array.rev a)
     let u = [| 0 |]
-    x.CopyTo(u, 0)
+    a.CopyTo(u, 0)
     uint32 (u.[0])
 
-let boolArrayToUint64 (a : bool []) =
+let boolArrayToUint64 a =
     if Array.length a <= 32 then
         uint64 (boolArrayToUint32 a)
     else
@@ -48,7 +47,7 @@ let boolArrayToUint64 (a : bool []) =
         let low = boolArrayToUint32 a.[32 ..]
         (uint64 high <<< (Array.length a.[32 ..])) ||| uint64 low
 
-let toUniqueBitvectors (rows : seq<string * bool []>) =
+let toUniqueBitvectors rows =
     let seen = HashSet<uint64>()
     Map.ofList [ for (id, array) in rows do
                      let bitVec = boolArrayToUint64 array
@@ -63,7 +62,7 @@ let possibleOneNeighbours numGenes state =
               yield (newFlip ^^^ !flip) ||| state
               flip := newFlip }
 
-let geneChange (genes : string []) state state' =
+let geneChange genes state state' =
     let index = Array.length genes - (int <| System.Math.Log(float <| state ^^^ state', 2.0)) - 1
     genes.[index]
 
@@ -85,7 +84,7 @@ let uniqueStates =
 
 let edges = constructSTG header map
 
-let writeBoolArray (a : bool []) =
+let writeBoolArray a =
     Array.map (sprintf ",%b") a |> Array.reduce (+)
 
 System.IO.File.WriteAllLines(outputStatesCsvFilename, let header = header |> Array.map (sprintf ",%s") |> Array.reduce (+)
