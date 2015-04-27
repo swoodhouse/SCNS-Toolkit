@@ -10,7 +10,7 @@ To build on Windows with Visual Studio 2013, open SynthesisEngine.sln and then s
 
 To build on Linux:
 ```
-/usr/bin/xbuild /nologo SynthesisEngine.sln
+xbuild SynthesisEngine.sln
 ```
 
 After compiling, the following will run the synthesis engine on the provided example:
