@@ -19,7 +19,7 @@ SynthesisEngine.exe cmpStates.csv cmpEdges.csv cmpParameters.csv cmp_initial_sta
 ```
 On Linux, substitute ``mono SynthesisEngine.exe`` for ``SynthesisEngine.exe``.
 
-F# can be downloaded from [http://fsharp.org/](http://fsharp.org/).
+F# can be downloaded from [http://www.fsharp.org/](http://www.fsharp.org/).
 
 
 ## Scripts
