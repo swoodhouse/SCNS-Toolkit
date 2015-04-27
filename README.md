@@ -19,6 +19,8 @@ SynthesisEngine.exe cmpStates.csv cmpEdges.csv cmpParameters.csv cmp_initial_sta
 ```
 On Linux, substitute ``mono SynthesisEngine.exe`` for ``SynthesisEngine.exe``.
 
+F# can be downloaded from [http://fsharp.org/](http://fsharp.org/).
+
 
 ## Scripts
 Two scripts are provided in the toolkit, for converting single cell gene expression data into a format that can be handled by the synthesis engine, and for subsequent analysis of synthesised Boolean networks.
