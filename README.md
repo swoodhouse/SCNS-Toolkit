@@ -4,14 +4,21 @@
 
 ## Synthesis Engine
 
-The synthesis engine is written in F# and uses the Z3 theorem prover, via the Z3Fs DSL. It compiles and runs on Windows with F# 3.1 and .NET 4.5.
+The synthesis engine is written in F# and uses the Z3 theorem prover, via the Z3Fs DSL. It compiles and runs on Linux with F# 3.1 and Mono 3.12.1, and on Windows with F# 3.1 and .NET 4.5.
 
 To build on Windows with Visual Studio 2013, open SynthesisEngine.sln and then select `Build -> Build Solution`. You may be prompted to give permissions to FSharp.Data type providers.
+
+To build on Linux:
+```
+/usr/bin/xbuild /nologo SynthesisEngine.sln
+```
 
 After compiling, the following will run the synthesis engine on the provided example:
 ```
 SynthesisEngine.exe cmpStates.csv cmpEdges.csv cmpParameters.csv cmp_initial_states.txt cmp_target_states.txt cmp_all_states.txt <output_directory>
 ```
+On Linux, substitute ``mono SynthesisEngine.exe`` for ``SynthesisEngine.exe``.
+
 
 ## Scripts
 Two scripts are provided in the toolkit, for converting single cell gene expression data into a format that can be handled by the synthesis engine, and for subsequent analysis of synthesised Boolean networks.
