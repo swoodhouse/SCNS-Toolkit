@@ -41,7 +41,6 @@
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <DocumentationFile>bin\Release\SynthesisEngine.XML</DocumentationFile>
-    <Prefer32Bit>true</Prefer32Bit>
     <PlatformTarget>x64</PlatformTarget>
     <StartArguments>
     </StartArguments>
