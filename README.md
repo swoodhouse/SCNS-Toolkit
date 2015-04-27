@@ -4,7 +4,7 @@
 
 ## Synthesis Engine
 
-The synthesis engine is written in F# and uses the Z3 theorem prover, via the Z3Fs DSL. It compiles and runs on Linux with F# 3.1 and Mono 3.12.1, and on Windows with F# 3.1 and .NET 4.5.
+The synthesis engine is written in F# and uses the Z3 theorem prover, via the Z3Fs DSL. It compiles and runs on Linux with F# 3.1 and Mono 3.12.1, and on Windows with F# 3.1 and .NET 4.5. Mac OS X is currently untested.
 
 To build on Windows with Visual Studio 2013, open SynthesisEngine.sln and then select `Build -> Build Solution`. You may be prompted to give permissions to FSharp.Data type providers.
 
@@ -24,7 +24,7 @@ On Linux, substitute ``mono SynthesisEngine.exe`` for ``SynthesisEngine.exe``.
 Two scripts are provided in the toolkit, for converting single cell gene expression data into a format that can be handled by the synthesis engine, and for subsequent analysis of synthesised Boolean networks.
 
 ### constructSTG.fsx
-F# script for Windows or Linux which discretises a CSV file containing single cell gene expression data to binary expression values, and then constructs a state transition graph. The input CSV file must have genes as column names and unique cell identifiers as row names.
+F# script for Linux, Windows or Mac OS X which discretises a CSV file containing single cell gene expression data to binary expression values, and then constructs a state transition graph. The input CSV file must have genes as column names and unique cell identifiers as row names.
 
 The script produces CSV files for input to the synthesis engine and a SIF file for visualisation in Cytoscape (or a similar tool).
 
@@ -36,10 +36,10 @@ fsi.exe --exec constructSTG.fsx input.csv 25 outputStates.csv outputEdges.csv ou
 
 On Windows, `fsi.exe` can be found in `C:\Program Files (x86)\Microsoft SDKs\F#\<version>\Framework\<version>\` after installing F#.
 
-On Linux, substitute ``fsharpi`` for ``fsi.exe``.
+On Linux or Mac OS X, substitute ``fsharpi`` for ``fsi.exe``.
 
 ### genysis_perturbations.R
-R script for Linux which automates the process of running GenYsis (http://lsisrv5.epfl.ch/lsi/~garg/genysis_v2.html) on a model and performing all single-gene perturbations. The perturbed models are then compared to the wild-type model in terms of alterations to the stable states that the model is able to reach.
+R script for Linux or Mac OS X which automates the process of running GenYsis (http://lsisrv5.epfl.ch/lsi/~garg/genysis_v2.html) on a model and performing all single-gene perturbations. The perturbed models are then compared to the wild-type model in terms of alterations to the stable states that the model is able to reach.
 
 Both a failure to reach states normally reachable for the wild-type model, as well as stabilisation at novel "unnatural" states can be important, with the former mimicking for example the failure of a cell to develop down a given lineage, while the latter could be used to gain mechanistic understanding of pathological cellular states (such as in cancer cells). A summary of these results are collated into a CSV file.
 
