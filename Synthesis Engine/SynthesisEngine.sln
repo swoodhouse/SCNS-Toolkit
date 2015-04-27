@@ -3,15 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.30723.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SynthesisEngine", "SynthesisEngine.fsproj", "{E39E4315-DD1C-4234-8807-6FA1F996FACD}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SynthesisEngine", "SynthesisEngine.fsproj", "{28E23D35-F186-4E06-B0F2-A6E4A0721518}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{E39E4315-DD1C-4234-8807-6FA1F996FACD}.Release|x64.ActiveCfg = Release|x64
-		{E39E4315-DD1C-4234-8807-6FA1F996FACD}.Release|x64.Build.0 = Release|x64
+		{28E23D35-F186-4E06-B0F2-A6E4A0721518}.Release|x64.ActiveCfg = Release|x64
+		{28E23D35-F186-4E06-B0F2-A6E4A0721518}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
