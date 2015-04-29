@@ -118,7 +118,10 @@ let encodeUpdateFunction gene genes maxActivators maxRepressors =
                                  fixMaxActivators maxActivators
                                  fixMaxRepressors maxRepressors |]
     (circuitEncoding, a, r)
- 
+
+let private leftChild i = ((i + 1) * 2) - 1
+let private rightChild i = leftChild i + 1
+
 let private evaluateUpdateFunction = 
     let counter = ref 0
     
@@ -155,18 +158,11 @@ let private evaluateUpdateFunction =
                         
         (And [| variableConstraints aVars intermediateValueVariablesA
                 variableConstraints rVars intermediateValueVariablesR
-                andConstraints aVars intermediateValueVariablesA 0 1 2
-                andConstraints aVars intermediateValueVariablesA 1 3 4
-                andConstraints aVars intermediateValueVariablesA 2 5 6
-                andConstraints rVars intermediateValueVariablesR 0 1 2
-                andConstraints rVars intermediateValueVariablesR 1 3 4
-                andConstraints rVars intermediateValueVariablesR 2 5 6
-                orConstraints aVars intermediateValueVariablesA 0 1 2
-                orConstraints aVars intermediateValueVariablesA 1 3 4
-                orConstraints aVars intermediateValueVariablesA 2 5 6
-                orConstraints rVars intermediateValueVariablesR 0 1 2
-                orConstraints rVars intermediateValueVariablesR 1 3 4
-                orConstraints rVars intermediateValueVariablesR 2 5 6
+
+                [| for i in 0 .. 2 -> andConstraints aVars intermediateValueVariablesA i (leftChild i) (rightChild i) |] |> And
+                [| for i in 0 .. 2 -> andConstraints rVars intermediateValueVariablesR i (leftChild i) (rightChild i) |] |> And
+                [| for i in 0 .. 2 -> orConstraints aVars intermediateValueVariablesA i (leftChild i) (rightChild i) |] |> And
+                [| for i in 0 .. 2 -> orConstraints rVars intermediateValueVariablesR i (leftChild i) (rightChild i) |] |> And
 
                 circuitVal =. circuitValue|], circuitVal)
 
@@ -181,8 +177,6 @@ let circuitEvaluatesToDifferent gene aVars rVars (profile : bool []) =
     (evaluationEncoding, circuitVal =. Not b)
 
 let solutionToCircuit (geneNames : string []) (activatorAssignment : seq<int>) (repressorAssignment : seq<int>) =
-    let leftChild i = ((i + 1) * 2) - 1
-    let rightChild i = leftChild i + 1
     let toCircuit assignment =
         let rec toCircuit i =
             match Seq.nth i assignment with

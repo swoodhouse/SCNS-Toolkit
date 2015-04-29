@@ -141,19 +141,19 @@ let private findFunctions (solver : Solver) gene genes (geneNames : string []) m
                       elif i = NOTHING then "Nothing"
                       else geneNames.[i - 2]
 
-    set [ while solver.Check() = Status.SATISFIABLE do
-                let m = solver.Model
+    seq { while solver.Check() = Status.SATISFIABLE do
+              let m = solver.Model
 
-                let circuitDecls = Array.filter (fun (d : FuncDecl) -> Set.contains (d.Name.ToString()) circuitVars) m.ConstDecls
-                solver.Add(constraintsCircuitVar m circuitDecls)
+              let circuitDecls = Array.filter (fun (d : FuncDecl) -> Set.contains (d.Name.ToString()) circuitVars) m.ConstDecls
+              solver.Add(constraintsCircuitVar m circuitDecls)
 
-                let enforceDecls = Array.filter (fun (d : FuncDecl) -> d.Name.ToString().StartsWith "enforced") m.ConstDecls
-                let numEnforced = List.sum <| [ for d in enforceDecls do yield System.Int32.Parse (string m.[d]) ]
+              let enforceDecls = Array.filter (fun (d : FuncDecl) -> d.Name.ToString().StartsWith "enforced") m.ConstDecls
+              let numEnforced = List.sum <| [ for d in enforceDecls do yield System.Int32.Parse (string m.[d]) ]
 
-                yield ("numEnforced", string numEnforced) :: [ for d in circuitDecls do
-                                                                    let value = System.Int32.Parse(m.[d].ToString())
-                                                                    if value <> NOTHING then
-                                                                        yield (sprintf "%O" d.Name, intToName value) ] ]
+              yield ("numEnforced", string numEnforced) :: [ for d in circuitDecls do
+                                                                 let value = System.Int32.Parse(m.[d].ToString())
+                                                                 if value <> NOTHING then
+                                                                     yield (sprintf "%O" d.Name, intToName value) ] }
 
 let synthesise geneIds geneNames geneParameters statesFilename initialStates targetStates nonTransitionEnforcedStates outputDir =
     let f n = 2 + (Seq.findIndex ((=) n) geneNames)
@@ -180,6 +180,10 @@ let synthesise geneIds geneNames geneParameters statesFilename initialStates tar
                                                | l -> if List.nth l (List.length l - 1) = targetStates.[i] then yield l ] |]
 
     geneNames |> Array.iter (fun gene -> let a, r, t = Map.find gene geneParameters
-                                         let expressionProfilesWithGeneTransitions, expressionProfilesWithoutGeneTransitions = getExpressionProfiles (f gene)
+                                         let expressionProfilesWithGeneTransitions,
+                                             expressionProfilesWithoutGeneTransitions = getExpressionProfiles (f gene)
+                                         let file = outputDir + "/" + gene + ".txt"
+                                         System.IO.File.WriteAllText(file, "")
                                          let circuits = findFunctions solver (f gene) geneIds geneNames a r t invertedPaths expressionProfilesWithGeneTransitions expressionProfilesWithoutGeneTransitions
-                                         System.IO.File.WriteAllLines (outputDir + "/" + gene + ".txt", Seq.map (sprintf "%A") circuits))
+                                         for circuit in circuits do
+                                             System.IO.File.AppendAllText(file, sprintf "%A\n" circuit))
