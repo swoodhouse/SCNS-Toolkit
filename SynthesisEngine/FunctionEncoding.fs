@@ -29,7 +29,7 @@ let makeCircuitVar = let numBits = (uint32 << ceil <| System.Math.Log(float numG
 let makeEnforcedVar = let numBits = (uint32 << ceil <| System.Math.Log(float numNonTransitionEnforcedStates, 2.0)) + 1u
                       fun name -> BitVec (name, numBits)
 
-let private variableDomains var lowerBound upperBound =
+let private variableDomains lowerBound upperBound var =
     (var >=. lowerBound) &&. (var <=. upperBound)
 
 let private parentsOfNothingArentGates (a : BitVec []) (r : BitVec []) =
@@ -96,32 +96,27 @@ let encodeUpdateFunction gene genes maxActivators maxRepressors =
     let a = [| for i in 1..7 -> makeCircuitVar (sprintf "a%i" i) |]
     let r = [| for i in 1..7 -> makeCircuitVar (sprintf "r%i" i) |]
 
-    let circuitEncoding = And <| [| variableDomains a.[0] 0 (NOTHING - 1)
-                                    variableDomains r.[0] 0 NOTHING
+    let circuitEncoding = And [| variableDomains 0 (NOTHING - 1) a.[0]
+                                 Array.map (variableDomains 0 NOTHING) a.[1..2] |> And
+                                 Array.map (variableDomains 0 NOTHING) r.[0..2] |> And
+                                 Array.map (variableDomains 2 NOTHING) a.[3..6] |> And
+                                 Array.map (variableDomains 2 NOTHING) r.[3..6] |> And
 
-                                    variableDomains a.[1] 0 NOTHING; variableDomains a.[2] 0 NOTHING              
-                                    variableDomains r.[1] 0 NOTHING; variableDomains r.[2] 0 NOTHING
-
-                                    variableDomains a.[3] 2 NOTHING; variableDomains a.[4] 2 NOTHING; variableDomains a.[4] 2 NOTHING; variableDomains a.[5] 2 NOTHING
-                                    variableDomains a.[6] 2 NOTHING
-                                    variableDomains r.[3] 2 NOTHING; variableDomains r.[4] 2 NOTHING; variableDomains r.[4] 2 NOTHING; variableDomains r.[5] 2 NOTHING
-                                    variableDomains r.[6] 2 NOTHING
-
-                                    parentsOfNothingArentGates a r
-                                    parentsOfRestAreGates a r
-                                    variablesDoNotAppearMoreThanOnce (List.ofSeq <| a ++ r)
+                                 parentsOfNothingArentGates a r
+                                 parentsOfRestAreGates a r
+                                 variablesDoNotAppearMoreThanOnce (List.ofSeq <| a ++ r)
                                     
-                                    And [| for i in 1 .. 2 .. 5 -> enforceSiblingLexigraphicalOrdering a.[i] a.[i + 1] |]
-                                    And [| for i in 1 .. 2 .. 5 -> enforceSiblingLexigraphicalOrdering r.[i] r.[i + 1] |]
+                                 And [| for i in 1 .. 2 .. 5 -> enforceSiblingLexigraphicalOrdering a.[i] a.[i + 1] |]
+                                 And [| for i in 1 .. 2 .. 5 -> enforceSiblingLexigraphicalOrdering r.[i] r.[i + 1] |]
                                     
-                                    enforceLexigraphicalOrderingBetweenBranches a.[1] a.[2] a.[3] a.[5]
-                                    enforceLexigraphicalOrderingBetweenBranches r.[1] r.[2] r.[3] r.[5]
+                                 enforceLexigraphicalOrderingBetweenBranches a.[1] a.[2] a.[3] a.[5]
+                                 enforceLexigraphicalOrderingBetweenBranches r.[1] r.[2] r.[3] r.[5]
 
-                                    enforceLexigraphicalOrderingNaryGate a
-                                    enforceLexigraphicalOrderingNaryGate r
+                                 enforceLexigraphicalOrderingNaryGate a
+                                 enforceLexigraphicalOrderingNaryGate r
                                     
-                                    fixMaxActivators maxActivators
-                                    fixMaxRepressors maxRepressors |]
+                                 fixMaxActivators maxActivators
+                                 fixMaxRepressors maxRepressors |]
     (circuitEncoding, a, r)
  
 let private evaluateUpdateFunction = 
@@ -133,8 +128,8 @@ let private evaluateUpdateFunction =
 
         let geneValues = Array.map toBool geneValues
         
-        let intermediateValueVariablesA = [| for j in 1 .. 7 ->  Bool <| sprintf "va%i_%i" j i |]
-        let intermediateValueVariablesR = [| for j in 1 .. 7 ->  Bool <| sprintf "vr%i_%i" j i |]
+        let intermediateValueVariablesA = [| for j in 1 .. 7 -> Bool <| sprintf "va%i_%i" j i |]
+        let intermediateValueVariablesR = [| for j in 1 .. 7 -> Bool <| sprintf "vr%i_%i" j i |]
 
         let andConstraints (symVars : BitVec []) (variables : Bool []) pi c1i c2i =
             Implies (symVars.[pi] =. AND, variables.[pi] =. (variables.[c1i] &&. variables.[c2i]))
