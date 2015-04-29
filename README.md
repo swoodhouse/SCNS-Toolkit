@@ -10,7 +10,7 @@ To build on Windows with Visual Studio 2013, open SynthesisEngine.sln and then s
 
 To build on Linux:
 ```
-/usr/bin/xbuild /nologo SynthesisEngine.sln
+xbuild SynthesisEngine.sln
 ```
 
 After compiling, the following will run the synthesis engine on the provided example:
@@ -19,7 +19,7 @@ SynthesisEngine.exe cmpStates.csv cmpEdges.csv cmpParameters.csv cmp_initial_sta
 ```
 On Linux, substitute ``mono SynthesisEngine.exe`` for ``SynthesisEngine.exe``.
 
-F# can be downloaded from [http://fsharp.org/](http://fsharp.org/).
+F# can be downloaded from [http://www.fsharp.org/](http://www.fsharp.org/).
 
 
 ## Scripts
