@@ -13,20 +13,14 @@ let rec private delete x = function
   | h :: t when x = h -> t
   | h :: t -> h :: delete x t
 
-let private numGenes = let statesFilename = System.Environment.GetCommandLineArgs().[1]
-                       (CsvFile.Load(statesFilename).Headers |> Option.get |> Seq.length) - 1
-
-let private numNonTransitionEnforcedStates = let nonTransitionEnforcedStatesFilename = System.Environment.GetCommandLineArgs().[6]
-                                             readLines nonTransitionEnforcedStatesFilename |> Array.length
-
 let [<Literal>] AND = 0
 let [<Literal>] OR = 1
-let NOTHING = numGenes + 2
+let NOTHING = NUM_GENES + 2
 
-let makeCircuitVar = let numBits = (uint32 << ceil <| System.Math.Log(float numGenes, 2.0)) + 1u
+let makeCircuitVar = let numBits = (uint32 << ceil <| System.Math.Log(float NUM_GENES, 2.0)) + 1u
                      fun name -> BitVec (name, numBits)
 
-let makeEnforcedVar = let numBits = (uint32 << ceil <| System.Math.Log(float numNonTransitionEnforcedStates, 2.0)) + 1u
+let makeEnforcedVar = let numBits = (uint32 << ceil <| System.Math.Log(float NUM_NON_TRANSITIONS_ENFORCED_STATES, 2.0)) + 1u
                       fun name -> BitVec (name, numBits)
 
 let private variableDomains lowerBound upperBound var =

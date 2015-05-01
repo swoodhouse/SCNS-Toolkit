@@ -8,6 +8,12 @@ let readLines filePath = System.IO.File.ReadAllLines(filePath)
 
 let private EDGES_FILENAME = System.Environment.GetCommandLineArgs().[2]
 
+let NUM_GENES = let statesFilename = System.Environment.GetCommandLineArgs().[1]
+                (CsvFile.Load(statesFilename).Headers |> Option.get |> Seq.length) - 1
+
+let NUM_NON_TRANSITIONS_ENFORCED_STATES = let nonTransitionEnforcedStatesFilename = System.Environment.GetCommandLineArgs().[6]
+                                          readLines nonTransitionEnforcedStatesFilename |> Array.length
+
 let geneTransitions =
     let csv = EdgeChanges.Load(EDGES_FILENAME)
     fun gene ->
