@@ -75,8 +75,7 @@ let private findAllowedEdges (solver : Solver) gene genes (geneNames : string []
 
                 let activatorDecls = Array.filter (fun (d : FuncDecl) -> Set.contains (d.Name.ToString()) activatorVars) m.ConstDecls |> Array.sortBy (fun d -> d.Name.ToString().Remove(0,1).AsInteger())
                 let repressorDecls = Array.filter (fun (d : FuncDecl) -> Set.contains (d.Name.ToString()) repressorVars) m.ConstDecls |> Array.sortBy (fun d -> d.Name.ToString().Remove(0,1).AsInteger())
-                let activatorAssignment =
-                    activatorDecls |> Seq.map (fun d -> System.Int32.Parse(m.[d].ToString()))
+                let activatorAssignment = activatorDecls |> Seq.map (fun d -> System.Int32.Parse(m.[d].ToString()))
                 let repressorAssignment = repressorDecls |> Seq.map (fun d -> System.Int32.Parse(m.[d].ToString()))
 
                 let circuit = solutionToCircuit geneNames activatorAssignment repressorAssignment
@@ -136,24 +135,25 @@ let private findFunctions (solver : Solver) gene genes (geneNames : string []) m
                 pathsEncoding,
                 manyNonTransitionsEnforced gene aVars rVars expressionProfilesWithoutGeneTransitions numNonTransitionsEnforced)
 
-    let intToName i = if i = AND then "And"
-                      elif i = OR then "Or"
-                      elif i = NOTHING then "Nothing"
-                      else geneNames.[i - 2]
-
     seq { while solver.Check() = Status.SATISFIABLE do
               let m = solver.Model
 
-              let circuitDecls = Array.filter (fun (d : FuncDecl) -> Set.contains (d.Name.ToString()) circuitVars) m.ConstDecls
+              let activatorDecls = Array.filter (fun (d : FuncDecl) -> Set.contains (d.Name.ToString()) activatorVars) m.ConstDecls |> Array.sortBy (fun d -> d.Name.ToString().Remove(0,1).AsInteger())
+              let repressorDecls = Array.filter (fun (d : FuncDecl) -> Set.contains (d.Name.ToString()) repressorVars) m.ConstDecls |> Array.sortBy (fun d -> d.Name.ToString().Remove(0,1).AsInteger())
+
+              let circuitDecls = activatorDecls ++ repressorDecls
               solver.Add(constraintsCircuitVar m circuitDecls)
 
               let enforceDecls = Array.filter (fun (d : FuncDecl) -> d.Name.ToString().StartsWith "enforced") m.ConstDecls
               let numEnforced = List.sum <| [ for d in enforceDecls do yield System.Int32.Parse (string m.[d]) ]
 
-              yield ("numEnforced", string numEnforced) :: [ for d in circuitDecls do
-                                                                 let value = System.Int32.Parse(m.[d].ToString())
-                                                                 if value <> NOTHING then
-                                                                     yield (sprintf "%O" d.Name, intToName value) ] }
+              let activatorAssignment = activatorDecls |> Seq.map (fun d -> System.Int32.Parse(m.[d].ToString()))
+              let repressorAssignment = repressorDecls |> Seq.map (fun d -> System.Int32.Parse(m.[d].ToString()))
+
+              let circuit = solutionToCircuit geneNames activatorAssignment repressorAssignment
+              let max = expressionProfilesWithoutGeneTransitions |> Seq.length
+
+              yield sprintf "%i / %i\t%s" numEnforced max (Circuit.printCircuit circuit) }
 
 let synthesise geneIds geneNames geneParameters statesFilename initialStates targetStates nonTransitionEnforcedStates outputDir =
     let f n = 2 + (Seq.findIndex ((=) n) geneNames)
@@ -186,4 +186,5 @@ let synthesise geneIds geneNames geneParameters statesFilename initialStates tar
                                          System.IO.File.WriteAllText(file, "")
                                          let circuits = findFunctions solver (f gene) geneIds geneNames a r t invertedPaths expressionProfilesWithGeneTransitions expressionProfilesWithoutGeneTransitions
                                          for circuit in circuits do
-                                             System.IO.File.AppendAllText(file, sprintf "%A\n" circuit))
+                                             System.IO.File.AppendAllText(file, circuit + "\n"))
+
