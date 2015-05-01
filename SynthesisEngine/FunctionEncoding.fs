@@ -16,7 +16,7 @@ let rec private delete x = function
 let private numGenes = let statesFilename = System.Environment.GetCommandLineArgs().[1]
                        (CsvFile.Load(statesFilename).Headers |> Option.get |> Seq.length) - 1
 
-let private numNonTransitionEnforcedStates = let nonTransitionEnforcedStatesFilename = System.Environment.GetCommandLineArgs().[5]
+let private numNonTransitionEnforcedStates = let nonTransitionEnforcedStatesFilename = System.Environment.GetCommandLineArgs().[6]
                                              readLines nonTransitionEnforcedStatesFilename |> Array.length
 
 let [<Literal>] AND = 0
@@ -25,7 +25,7 @@ let NOTHING = numGenes + 2
 
 let makeCircuitVar = let numBits = (uint32 << ceil <| System.Math.Log(float numGenes, 2.0)) + 1u
                      fun name -> BitVec (name, numBits)
-                     
+
 let makeEnforcedVar = let numBits = (uint32 << ceil <| System.Math.Log(float numNonTransitionEnforcedStates, 2.0)) + 1u
                       fun name -> BitVec (name, numBits)
 
@@ -76,7 +76,6 @@ let private enforceLexigraphicalOrderingNaryGate (vars : BitVec []) =
 
 let activatorVars = set [ for i in 1..7 do yield "a" + string i ]
 let repressorVars = set [ for i in 1..7 do yield "r" + string i ]
-let circuitVars = activatorVars + repressorVars
 
 let private fixMaxInputs v max =
     match max with
