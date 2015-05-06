@@ -15,7 +15,7 @@ xbuild SynthesisEngine.sln
 
 After compiling, the following will run the synthesis engine on the provided example:
 ```
-SynthesisEngine.exe cmpStates.csv cmpEdges.csv cmpParameters.csv cmp_initial_states.txt cmp_target_states.txt cmp_all_states.txt <output_directory>
+SynthesisEngine.exe cmpStates.csv cmpEdges.csv cmpParameters.csv cmp_initial_states.txt cmp_target_states.txt <output_directory>
 ```
 On Linux, substitute ``mono SynthesisEngine.exe`` for ``SynthesisEngine.exe``.
 
