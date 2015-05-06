@@ -2,9 +2,9 @@ module ShortestPaths
 
 open System.Collections.Generic
 
-type private Cursor = {
-    Focus: string
-    Previous: Map<string, string> }
+type private Cursor<'a when 'a : comparison> = {
+   Focus: 'a
+   Previous: Map<'a, 'a> }
 
 let private neighbours graph visited cursor =
     if not <| Map.containsKey cursor.Focus graph then Seq.empty
@@ -23,9 +23,9 @@ let private previousToPath target previous =
     previousToPath target []
 
 let shortestPathMultiSink graph source sinks =
-  let q = Queue<Cursor>([{Focus = source; Previous = Map.empty}])
-  let visited = HashSet<string>()
-  
+  let q = Queue<Cursor<'a>>([{Focus = source; Previous = Map.empty}])
+  let visited = HashSet<'a>()
+
   [ while q.Count > 0 && not <| visited.IsSupersetOf sinks do
       let u = q.Dequeue()
       for v in neighbours graph (Set.ofSeq visited) u do

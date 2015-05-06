@@ -1,26 +1,26 @@
 module FunctionEncoding
 
 open FSharp.Data
-open DataLoading
+open Data
 open Microsoft.Z3.FSharp.Common
 open Microsoft.Z3.FSharp.Bool
 open Microsoft.Z3.FSharp.BitVec
-
-let toBool b = if b then True else False
 
 let rec private delete x = function
   | [] -> []
   | h :: t when x = h -> t
   | h :: t -> h :: delete x t
 
-let [<Literal>] AND = 0
-let [<Literal>] OR = 1
-let NOTHING = NUM_GENES + 2
+let [<Literal>] private AND = 0
+let [<Literal>] private OR = 1
+let private NOTHING = NUM_GENES + 2
+let private GENE_IDS = seq {2 .. (NOTHING - 1)}
+let private indexToName i geneNames = Seq.nth (i - 2) geneNames
 
 let makeCircuitVar = let numBits = (uint32 << ceil <| System.Math.Log(float NUM_GENES, 2.0)) + 1u
                      fun name -> BitVec (name, numBits)
 
-let makeEnforcedVar = let numBits = (uint32 << ceil <| System.Math.Log(float NUM_NON_TRANSITIONS_ENFORCED_STATES, 2.0)) + 1u
+let makeEnforcedVar = let numBits = (uint32 << ceil <| System.Math.Log(float NUM_STATES, 2.0)) + 1u
                       fun name -> BitVec (name, numBits)
 
 let private variableDomains lowerBound upperBound var =
@@ -82,10 +82,7 @@ let private fixMaxInputs v max =
 let private fixMaxActivators = fixMaxInputs "a"
 let private fixMaxRepressors = fixMaxInputs "r"
 
-let encodeUpdateFunction gene genes maxActivators maxRepressors =
-    if not (Set.contains gene genes && maxActivators > 0 && maxActivators <= 4 && maxRepressors >= 0 && maxRepressors <= 4) then
-        failwith "Incorrect arguments to encodeForUpdateFunction"
-
+let encodeUpdateFunction maxActivators maxRepressors =
     let a = [| for i in 1..7 -> makeCircuitVar (sprintf "a%i" i) |]
     let r = [| for i in 1..7 -> makeCircuitVar (sprintf "r%i" i) |]
 
@@ -118,12 +115,10 @@ let private rightChild i = leftChild i + 1
 let private evaluateUpdateFunction = 
     let counter = ref 0
     
-    fun (aVars : BitVec []) (rVars : BitVec []) (geneValues : bool []) ->
+    fun (geneNames : seq<Gene>) (aVars : BitVec []) (rVars : BitVec []) (state : State) ->
         let i = !counter
         counter := i + 1
 
-        let geneValues = Array.map toBool geneValues
-        
         let intermediateValueVariablesA = [| for j in 1 .. 7 -> Bool <| sprintf "va%i_%i" j i |]
         let intermediateValueVariablesR = [| for j in 1 .. 7 -> Bool <| sprintf "vr%i_%i" j i |]
 
@@ -132,11 +127,11 @@ let private evaluateUpdateFunction =
 
         let orConstraints (symVars : BitVec []) (variables : Bool []) pi c1i c2i =
             Implies (symVars.[pi] =. OR, variables.[pi] =. (variables.[c1i] ||. variables.[c2i]))
-        
+
         let variableConstraints (symVars : BitVec []) (intermediateVars : Bool []) =
             let f i symVar =
-                [| for v in 2 .. (NOTHING - 1) do
-                       yield Implies (symVar =. v, intermediateVars.[i] =. geneValues.[v - 2])
+                [| for v in GENE_IDS do
+                      yield Implies (symVar =. v, intermediateVars.[i] =. Map.find (indexToName v geneNames) state.Values)
                 |] |> And
 
             Array.mapi f symVars |> And
@@ -159,24 +154,22 @@ let private evaluateUpdateFunction =
 
                 circuitVal =. circuitValue|], circuitVal)
 
-let circuitEvaluatesToSame gene aVars rVars (profile : bool []) =
-    let b = toBool profile.[gene - 2]
-    let evaluationEncoding, circuitVal = evaluateUpdateFunction aVars rVars profile
-    (evaluationEncoding, circuitVal =. b)
+let circuitEvaluatesToSame gene geneNames aVars rVars (state : State) =
+    let evaluationEncoding, circuitVal = evaluateUpdateFunction geneNames aVars rVars state
+    (evaluationEncoding, circuitVal =. Map.find gene state.Values)
             
-let circuitEvaluatesToDifferent gene aVars rVars (profile : bool []) =
-    let b = toBool profile.[gene - 2]
-    let evaluationEncoding, circuitVal = evaluateUpdateFunction aVars rVars profile
-    (evaluationEncoding, circuitVal =. Not b)
+let circuitEvaluatesToDifferent gene geneNames aVars rVars (state : State) =
+    let evaluationEncoding, circuitVal = evaluateUpdateFunction geneNames aVars rVars state
+    (evaluationEncoding, circuitVal =. not (Map.find gene state.Values))
 
-let solutionToCircuit (geneNames : string []) (activatorAssignment : seq<int>) (repressorAssignment : seq<int>) =
+let solutionToCircuit geneNames (activatorAssignment : seq<int>) (repressorAssignment : seq<int>) =
     let toCircuit assignment =
         let rec toCircuit i =
             match Seq.nth i assignment with
             | AND -> Circuit.And (toCircuit <| leftChild i, toCircuit <| rightChild i)
             | OR -> Circuit.Or (toCircuit <| leftChild i, toCircuit <| rightChild i)
             | n when n = NOTHING -> failwith "solutionToCircuit pattern match error"
-            | var -> Circuit.Node (geneNames.[var - 2])            
+            | var -> Circuit.Node (indexToName var geneNames)
         toCircuit 0
 
     if Seq.head repressorAssignment = NOTHING then

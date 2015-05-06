@@ -1,10 +1,10 @@
 module Synthesis
 
-open FSharp.Data
+open FSharpx.Collections
 open Microsoft.Z3
 open Microsoft.Z3.FSharp.Common
 open Microsoft.Z3.FSharp.Bool
-open DataLoading
+open Data
 open FunctionEncoding
 open ShortestPaths
 
@@ -22,45 +22,40 @@ let private buildGraph edges =
 
     Seq.fold build Map.empty edges
 
-let private askNonTransition gene aVars rVars =
+let private askNonTransition gene geneNames aVars rVars =
     let counter = ref 0
-        
-    fun (profile : bool []) ->
+
+    fun (state : State) ->
         let nonTransitionEnforced = makeEnforcedVar (sprintf "enforced_%i" !counter)
         counter := !counter + 1
 
-        let encoding, same = circuitEvaluatesToSame gene aVars rVars profile
+        let encoding, same = circuitEvaluatesToSame gene geneNames aVars rVars state
         (encoding &&. If (same, nonTransitionEnforced =. 1, nonTransitionEnforced =. 0),
             nonTransitionEnforced)
 
-let private manyNonTransitionsEnforced gene aVars rVars expressionProfilesWithoutGeneTransitions numNonTransitionsEnforced =
+let private manyNonTransitionsEnforced gene geneNames aVars rVars statesWithoutGeneTransitions numNonTransitionsEnforced =
     if numNonTransitionsEnforced = 0 then True
     else
-        let askNonTransitions, enforceVars = Array.unzip << Array.ofSeq <| Seq.map (askNonTransition gene aVars rVars) expressionProfilesWithoutGeneTransitions
+        let askNonTransitions, enforceVars = Array.unzip << Array.ofSeq <| Seq.map (askNonTransition gene geneNames aVars rVars) statesWithoutGeneTransitions
         let askNonTransitions = And askNonTransitions
         let manyEnforced = Array.reduce (+) enforceVars >=. numNonTransitionsEnforced
 
         askNonTransitions &&. manyEnforced
 
-let private findAllowedEdges (solver : Solver) gene genes (geneNames : string []) maxActivators maxRepressors thresholdFraction
-                             (expressionProfilesWithGeneTransitions : Runtime.CsvFile<CsvRow>) (expressionProfilesWithoutGeneTransitions : Runtime.CsvFile<CsvRow>) =
-    let seenEdges = System.Collections.Generic.HashSet<string * string>()
-
-    let circuitEncoding, aVars, rVars = encodeUpdateFunction gene genes maxActivators maxRepressors
-    let expressionProfilesWithoutGeneTransitions = Seq.map rowToArray expressionProfilesWithoutGeneTransitions.Rows
+let private findAllowedEdges (solver : Solver) gene geneNames maxActivators maxRepressors thresholdFraction
+                             statesWithGeneTransitions statesWithoutGeneTransitions =
+    let seenEdges = System.Collections.Generic.HashSet<State * State>()
+    let circuitEncoding, aVars, rVars = encodeUpdateFunction maxActivators maxRepressors
 
     let numNonTransitionsEnforced =
-        let max = expressionProfilesWithoutGeneTransitions |> Seq.length
+        let max = statesWithoutGeneTransitions |> Set.count
         if thresholdFraction = 0 then max else max - max / thresholdFraction
 
-    let undirectedEdges = geneTransitions geneNames.[gene - 2]
-    let manyNonTransitionsEnforced = manyNonTransitionsEnforced gene aVars rVars expressionProfilesWithoutGeneTransitions numNonTransitionsEnforced
+    let manyNonTransitionsEnforced = manyNonTransitionsEnforced gene geneNames aVars rVars statesWithoutGeneTransitions numNonTransitionsEnforced
 
-    let encodeTransition stateA =
-        let profile s = expressionProfilesWithGeneTransitions.Filter(fun row -> row.Columns.[0] = s).Rows |> Seq.head |> rowToArray
-        let differentA = (let e, v = circuitEvaluatesToDifferent gene aVars rVars (profile stateA) in e &&. v)
-
-        differentA
+    let encodeTransition state =
+       let different = (let e, v = circuitEvaluatesToDifferent gene geneNames aVars rVars state in e &&. v)
+       different
 
     let checkEdge (a, b) =
         if seenEdges.Contains (a, b) then true
@@ -73,55 +68,45 @@ let private findAllowedEdges (solver : Solver) gene genes (geneNames : string []
             if solver.Check() = Status.SATISFIABLE then
                 let m = solver.Model
 
-                let activatorDecls = Array.filter (fun (d : FuncDecl) -> Set.contains (d.Name.ToString()) activatorVars) m.ConstDecls |> Array.sortBy (fun d -> d.Name.ToString().Remove(0,1).AsInteger())
-                let repressorDecls = Array.filter (fun (d : FuncDecl) -> Set.contains (d.Name.ToString()) repressorVars) m.ConstDecls |> Array.sortBy (fun d -> d.Name.ToString().Remove(0,1).AsInteger())
+                let activatorDecls = Array.filter (fun (d : FuncDecl) -> Set.contains (d.Name.ToString()) activatorVars) m.ConstDecls |> Array.sortBy (fun d -> d.Name.ToString().Remove(0,1) |> int)
+                let repressorDecls = Array.filter (fun (d : FuncDecl) -> Set.contains (d.Name.ToString()) repressorVars) m.ConstDecls |> Array.sortBy (fun d -> d.Name.ToString().Remove(0,1) |> int)
                 let activatorAssignment = activatorDecls |> Seq.map (fun d -> System.Int32.Parse(m.[d].ToString()))
                 let repressorAssignment = repressorDecls |> Seq.map (fun d -> System.Int32.Parse(m.[d].ToString()))
 
                 let circuit = solutionToCircuit geneNames activatorAssignment repressorAssignment
-                                
-                let profile state =
-                    expressionProfilesWithGeneTransitions.Filter(fun row -> row.Columns.[0] = state).Rows |> Seq.head |> rowToArray
-                    
-                let arrayToStateMap (a : bool []) =
-                    Map.ofArray <| Array.zip geneNames a
 
-                for (a, b) in undirectedEdges do
-                    let stateA = profile a
-                    if Circuit.evaluate circuit (arrayToStateMap stateA) <> stateA.[gene - 2] then
+                for (a, b) in statesWithGeneTransitions do
+                    if Circuit.evaluate circuit a.Values <> (Map.find gene a.Values) then
                         seenEdges.Add (a, b) |> ignore
-                    let stateB = profile b
-                    if Circuit.evaluate circuit (arrayToStateMap stateB) <> stateB.[gene - 2] then
+
+                    if Circuit.evaluate circuit b.Values <> (Map.find gene b.Values) then
                         seenEdges.Add (b, a) |> ignore
 
                 true
             else
                 false
-    set [ for (a, b) in undirectedEdges do
+
+    set [ for (a, b) in statesWithGeneTransitions do
               if checkEdge (a, b) then yield (a, b)
               if checkEdge (b, a) then yield (b, a) ]
 
-let private findFunctions (solver : Solver) gene genes (geneNames : string []) maxActivators maxRepressors thresholdFraction shortestPaths
-                          (expressionProfilesWithGeneTransitions : Runtime.CsvFile<CsvRow>) (expressionProfilesWithoutGeneTransitions : Runtime.CsvFile<CsvRow>) =
-    let circuitEncoding, aVars, rVars = encodeUpdateFunction gene genes maxActivators maxRepressors
-    let expressionProfilesWithoutGeneTransitions = Seq.map rowToArray expressionProfilesWithoutGeneTransitions.Rows
-    let undirectedEdges = geneTransitions geneNames.[gene - 2]
+let private findFunctions (solver : Solver) gene geneNames maxActivators maxRepressors thresholdFraction shortestPaths
+                          statesWithGeneTransitions statesWithoutGeneTransitions =
+    let circuitEncoding, aVars, rVars = encodeUpdateFunction maxActivators maxRepressors
     
     let numNonTransitionsEnforced =
-        let max = expressionProfilesWithoutGeneTransitions |> Seq.length
+        let max = statesWithoutGeneTransitions |> Set.count
         if thresholdFraction = 0 then max else max - max / thresholdFraction
 
     let encodeTransition (stateA, stateB) =
-        if not (Set.contains (stateA, stateB) undirectedEdges || Set.contains (stateB, stateA) undirectedEdges)
+        if not (Set.contains (stateA, stateB) statesWithGeneTransitions || Set.contains (stateB, stateA) statesWithGeneTransitions)
         then
             True
         else
-        let profile s = expressionProfilesWithGeneTransitions.Filter(fun row -> row.Columns.[0] = s).Rows |> Seq.head |> rowToArray
-        let differentA = (let e, v = circuitEvaluatesToDifferent gene aVars rVars (profile stateA) in e &&. v)
+            let differentA = (let e, v = circuitEvaluatesToDifferent gene geneNames aVars rVars stateA in e &&. v)
+            differentA
 
-        differentA
-
-    let encodePath (path : string list) =
+    let encodePath (path : State list) =
         let f (formula, u) v = (And [| formula; encodeTransition (u, v) |], v)
         List.fold f (True, List.head path) (List.tail path) |> fst
     
@@ -133,13 +118,17 @@ let private findFunctions (solver : Solver) gene genes (geneNames : string []) m
     solver.Reset()
     solver.Add (circuitEncoding,
                 pathsEncoding,
-                manyNonTransitionsEnforced gene aVars rVars expressionProfilesWithoutGeneTransitions numNonTransitionsEnforced)
+                manyNonTransitionsEnforced gene geneNames aVars rVars statesWithoutGeneTransitions numNonTransitionsEnforced)
 
     seq { while solver.Check() = Status.SATISFIABLE do
               let m = solver.Model
 
-              let activatorDecls = Array.filter (fun (d : FuncDecl) -> Set.contains (d.Name.ToString()) activatorVars) m.ConstDecls |> Array.sortBy (fun d -> d.Name.ToString().Remove(0,1).AsInteger())
-              let repressorDecls = Array.filter (fun (d : FuncDecl) -> Set.contains (d.Name.ToString()) repressorVars) m.ConstDecls |> Array.sortBy (fun d -> d.Name.ToString().Remove(0,1).AsInteger())
+              let activatorDecls = Array.filter (fun (d : FuncDecl) ->
+                                                   Set.contains (d.Name.ToString()) activatorVars) m.ConstDecls
+                                                   |> Array.sortBy (fun d -> d.Name.ToString().Remove(0,1) |> int)
+              let repressorDecls = Array.filter (fun (d : FuncDecl) ->
+                                                   Set.contains (d.Name.ToString()) repressorVars) m.ConstDecls
+                                                   |> Array.sortBy (fun d -> d.Name.ToString().Remove(0,1) |> int)
 
               let circuitDecls = activatorDecls ++ repressorDecls
               solver.Add(constraintsCircuitVar m circuitDecls)
@@ -151,26 +140,25 @@ let private findFunctions (solver : Solver) gene genes (geneNames : string []) m
               let repressorAssignment = repressorDecls |> Seq.map (fun d -> System.Int32.Parse(m.[d].ToString()))
 
               let circuit = solutionToCircuit geneNames activatorAssignment repressorAssignment
-              let max = expressionProfilesWithoutGeneTransitions |> Seq.length
+              let max = statesWithoutGeneTransitions |> Set.count
 
               yield sprintf "%i / %i\t%s" numEnforced max (Circuit.printCircuit circuit) }
 
-let synthesise geneIds geneNames geneParameters statesFilename initialStates targetStates nonTransitionEnforcedStates outputDir =
-    let f n = 2 + (Seq.findIndex ((=) n) geneNames)
-
-    let getExpressionProfiles = getExpressionProfiles statesFilename nonTransitionEnforcedStates geneNames
+let synthesise geneParameters statesWithGeneTransitions statesWithoutGeneTransitions initialStates targetStates outputDir =
     let solver = Solver()
 
-    let allowedEdges = geneNames |> Array.map (fun g -> let a, r, t = Map.find g geneParameters
-                                                        let expressionProfilesWithGeneTransitions, expressionProfilesWithoutGeneTransitions = getExpressionProfiles (f g)
-                                                        findAllowedEdges solver (f g) geneIds geneNames a r t expressionProfilesWithGeneTransitions expressionProfilesWithoutGeneTransitions)
-                                 |> Set.unionMany
+    let geneNames = Map.keys geneParameters
+    let geneParameters = Map.toSeq geneParameters
+
+    let allowedEdges = geneParameters |> Seq.map (fun (g, (a, r, t)) ->
+                                           findAllowedEdges solver g geneNames a r t (Map.find g statesWithGeneTransitions) (Map.find g statesWithoutGeneTransitions))
+                                      |> Set.unionMany
 
     let reducedStateGraph = buildGraph allowedEdges
 
     let shortestPaths = initialStates |> Array.map (fun initial ->
         let targetStates = targetStates |> Set.ofArray |> Set.remove initial
-        shortestPathMultiSink reducedStateGraph initial targetStates) 
+        shortestPathMultiSink reducedStateGraph initial targetStates)
 
     let invertedPaths = [| for i in 0 .. Array.length targetStates - 1 do
                                yield [ for j in 0 .. Array.length initialStates - 1 do
@@ -179,12 +167,9 @@ let synthesise geneIds geneNames geneParameters statesFilename initialStates tar
                                                | [] -> ()
                                                | l -> if List.nth l (List.length l - 1) = targetStates.[i] then yield l ] |]
 
-    geneNames |> Array.iter (fun gene -> let a, r, t = Map.find gene geneParameters
-                                         let expressionProfilesWithGeneTransitions,
-                                             expressionProfilesWithoutGeneTransitions = getExpressionProfiles (f gene)
-                                         let file = outputDir + "/" + gene + ".txt"
-                                         System.IO.File.WriteAllText(file, "")
-                                         let circuits = findFunctions solver (f gene) geneIds geneNames a r t invertedPaths expressionProfilesWithGeneTransitions expressionProfilesWithoutGeneTransitions
-                                         for circuit in circuits do
-                                             System.IO.File.AppendAllText(file, circuit + "\n"))
-
+    geneParameters |> Seq.iter (fun (g, (a, r, t)) ->
+                                  let file = outputDir + "/" + g + ".txt"
+                                  System.IO.File.WriteAllText(file, "")
+                                  let circuits = findFunctions solver g geneNames a r t invertedPaths (Map.find g statesWithGeneTransitions) (Map.find g statesWithoutGeneTransitions)
+                                  for circuit in circuits do
+                                      System.IO.File.AppendAllText(file, circuit + "\n"))
