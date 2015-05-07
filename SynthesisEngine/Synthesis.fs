@@ -22,16 +22,12 @@ let private buildGraph edges =
 
     Seq.fold build Map.empty edges
 
-let private askNonTransition gene geneNames aVars rVars =
-    let counter = ref 0
+let private askNonTransition gene geneNames aVars rVars (state : State) =
+    let nonTransitionEnforced = makeEnforcedVar ("enforced_" + state.Name)
 
-    fun (state : State) ->
-        let nonTransitionEnforced = makeEnforcedVar (sprintf "enforced_%i" !counter)
-        counter := !counter + 1
-
-        let encoding, same = circuitEvaluatesToSame gene geneNames aVars rVars state
-        (encoding &&. If (same, nonTransitionEnforced =. 1, nonTransitionEnforced =. 0),
-            nonTransitionEnforced)
+    let encoding, same = circuitEvaluatesToSame gene geneNames aVars rVars state
+    (encoding &&. If (same, nonTransitionEnforced =. 1, nonTransitionEnforced =. 0),
+     nonTransitionEnforced)
 
 let private manyNonTransitionsEnforced gene geneNames aVars rVars statesWithoutGeneTransitions numNonTransitionsEnforced =
     if numNonTransitionsEnforced = 0 then True
