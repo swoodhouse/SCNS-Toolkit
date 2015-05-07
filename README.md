@@ -6,7 +6,7 @@
 
 The synthesis engine is written in F# and uses the Z3 theorem prover, via the Z3Fs DSL. It compiles and runs on Linux with F# 3.1 and Mono 3.12.1, and on Windows with F# 3.1 and .NET 4.5. Mac OS X is currently untested.
 
-To build on Windows with Visual Studio 2013, open SynthesisEngine.sln and then select `Build -> Build Solution`. You may be prompted to give permissions to FSharp.Data type providers.
+To build on Windows with Visual Studio 2013, open SynthesisEngine.sln and then select `Build -> Build Solution`.
 
 To build on Linux:
 ```
@@ -15,7 +15,7 @@ xbuild SynthesisEngine.sln
 
 After compiling, the following will run the synthesis engine on the provided example:
 ```
-SynthesisEngine.exe cmpStates.csv cmpEdges.csv cmpParameters.csv cmp_initial_states.txt cmp_target_states.txt cmp_all_states.txt <output_directory>
+SynthesisEngine.exe cmpStates.csv cmpEdges.csv cmpParameters.csv cmp_initial_states.txt cmp_target_states.txt <output_directory>
 ```
 On Linux, substitute ``mono SynthesisEngine.exe`` for ``SynthesisEngine.exe``.
 
