@@ -1,6 +1,5 @@
 module FunctionEncoding
 
-open FSharp.Data
 open Data
 open Microsoft.Z3.FSharp.Common
 open Microsoft.Z3.FSharp.Bool
@@ -112,57 +111,51 @@ let encodeUpdateFunction maxActivators maxRepressors =
 let private leftChild i = ((i + 1) * 2) - 1
 let private rightChild i = leftChild i + 1
 
-let private evaluateUpdateFunction = 
-    let counter = ref 0
-    
-    fun (geneNames : seq<Gene>) (aVars : BitVec []) (rVars : BitVec []) (state : State) ->
-        let i = !counter
-        counter := i + 1
+let private evaluateUpdateFunction (geneNames : seq<Gene>) (aVars : BitVec []) (rVars : BitVec []) state =
+    let intermediateValueVariablesA = [| for i in 1 .. 7 -> Bool <| sprintf "va%i_%s" i state.Name |]
+    let intermediateValueVariablesR = [| for i in 1 .. 7 -> Bool <| sprintf "vr%i_%s" i state.Name |]
 
-        let intermediateValueVariablesA = [| for j in 1 .. 7 -> Bool <| sprintf "va%i_%i" j i |]
-        let intermediateValueVariablesR = [| for j in 1 .. 7 -> Bool <| sprintf "vr%i_%i" j i |]
+    let andConstraints (symVars : BitVec []) (variables : Bool []) pi c1i c2i =
+        Implies (symVars.[pi] =. AND, variables.[pi] =. (variables.[c1i] &&. variables.[c2i]))
 
-        let andConstraints (symVars : BitVec []) (variables : Bool []) pi c1i c2i =
-            Implies (symVars.[pi] =. AND, variables.[pi] =. (variables.[c1i] &&. variables.[c2i]))
+    let orConstraints (symVars : BitVec []) (variables : Bool []) pi c1i c2i =
+        Implies (symVars.[pi] =. OR, variables.[pi] =. (variables.[c1i] ||. variables.[c2i]))
 
-        let orConstraints (symVars : BitVec []) (variables : Bool []) pi c1i c2i =
-            Implies (symVars.[pi] =. OR, variables.[pi] =. (variables.[c1i] ||. variables.[c2i]))
+    let variableConstraints (symVars : BitVec []) (intermediateVars : Bool []) =
+        let f i symVar =
+            [| for v in GENE_IDS do
+                   yield Implies (symVar =. v, intermediateVars.[i] =. Map.find (indexToName v geneNames) state.Values)
+            |] |> And
 
-        let variableConstraints (symVars : BitVec []) (intermediateVars : Bool []) =
-            let f i symVar =
-                [| for v in GENE_IDS do
-                      yield Implies (symVar =. v, intermediateVars.[i] =. Map.find (indexToName v geneNames) state.Values)
-                |] |> And
+        Array.mapi f symVars |> And
 
-            Array.mapi f symVars |> And
+    let circuitValue =
+        let noRepressors = rVars.[0] =. NOTHING
+        If (noRepressors,
+            intermediateValueVariablesA.[0],
+            intermediateValueVariablesA.[0] &&. Not intermediateValueVariablesR.[0])
 
-        let circuitValue =
-            let noRepressors = rVars.[0] =. NOTHING
-            If (noRepressors,
-                intermediateValueVariablesA.[0],
-                intermediateValueVariablesA.[0] &&. Not intermediateValueVariablesR.[0])
-
-        let circuitVal = Bool <| sprintf "circuit_%i" i
+    let circuitVal = Bool <| sprintf "circuit_%s" state.Name
                         
-        (And [| variableConstraints aVars intermediateValueVariablesA
-                variableConstraints rVars intermediateValueVariablesR
+    (And [| variableConstraints aVars intermediateValueVariablesA
+            variableConstraints rVars intermediateValueVariablesR
 
-                [| for i in 0 .. 2 -> andConstraints aVars intermediateValueVariablesA i (leftChild i) (rightChild i) |] |> And
-                [| for i in 0 .. 2 -> andConstraints rVars intermediateValueVariablesR i (leftChild i) (rightChild i) |] |> And
-                [| for i in 0 .. 2 -> orConstraints aVars intermediateValueVariablesA i (leftChild i) (rightChild i) |] |> And
-                [| for i in 0 .. 2 -> orConstraints rVars intermediateValueVariablesR i (leftChild i) (rightChild i) |] |> And
+            [| for i in 0 .. 2 -> andConstraints aVars intermediateValueVariablesA i (leftChild i) (rightChild i) |] |> And
+            [| for i in 0 .. 2 -> andConstraints rVars intermediateValueVariablesR i (leftChild i) (rightChild i) |] |> And
+            [| for i in 0 .. 2 -> orConstraints aVars intermediateValueVariablesA i (leftChild i) (rightChild i) |] |> And
+            [| for i in 0 .. 2 -> orConstraints rVars intermediateValueVariablesR i (leftChild i) (rightChild i) |] |> And
 
-                circuitVal =. circuitValue|], circuitVal)
+            circuitVal =. circuitValue|], circuitVal)
 
-let circuitEvaluatesToSame gene geneNames aVars rVars (state : State) =
+let circuitEvaluatesToSame gene geneNames aVars rVars state =
     let evaluationEncoding, circuitVal = evaluateUpdateFunction geneNames aVars rVars state
     (evaluationEncoding, circuitVal =. Map.find gene state.Values)
             
-let circuitEvaluatesToDifferent gene geneNames aVars rVars (state : State) =
+let circuitEvaluatesToDifferent gene geneNames aVars rVars state =
     let evaluationEncoding, circuitVal = evaluateUpdateFunction geneNames aVars rVars state
     (evaluationEncoding, circuitVal =. not (Map.find gene state.Values))
 
-let solutionToCircuit geneNames (activatorAssignment : seq<int>) (repressorAssignment : seq<int>) =
+let solutionToCircuit geneNames activatorAssignment repressorAssignment =
     let toCircuit assignment =
         let rec toCircuit i =
             match Seq.nth i assignment with

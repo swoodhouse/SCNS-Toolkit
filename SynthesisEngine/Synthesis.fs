@@ -22,7 +22,7 @@ let private buildGraph edges =
 
     Seq.fold build Map.empty edges
 
-let private askNonTransition gene geneNames aVars rVars (state : State) =
+let private askNonTransition gene geneNames aVars rVars state =
     let nonTransitionEnforced = makeEnforcedVar ("enforced_" + state.Name)
 
     let encoding, same = circuitEvaluatesToSame gene geneNames aVars rVars state
@@ -38,22 +38,24 @@ let private manyNonTransitionsEnforced gene geneNames aVars rVars statesWithoutG
 
         askNonTransitions &&. manyEnforced
 
-let private findAllowedEdges (solver : Solver) gene geneNames maxActivators maxRepressors thresholdFraction
+let private findAllowedEdges (solver : Solver) gene geneNames maxActivators maxRepressors threshold
                              statesWithGeneTransitions statesWithoutGeneTransitions =
-    let seenEdges = System.Collections.Generic.HashSet<State * State>()
-    let circuitEncoding, aVars, rVars = encodeUpdateFunction maxActivators maxRepressors
+    if threshold = 0 then Set.ofSeq statesWithGeneTransitions
+    else
+      let seenEdges = System.Collections.Generic.HashSet<State * State>()
+      let circuitEncoding, aVars, rVars = encodeUpdateFunction maxActivators maxRepressors
 
-    let numNonTransitionsEnforced =
+      let numNonTransitionsEnforced =
         let max = statesWithoutGeneTransitions |> Set.count
-        if thresholdFraction = 0 then max else max - max / thresholdFraction
+        max * threshold / 100
 
-    let manyNonTransitionsEnforced = manyNonTransitionsEnforced gene geneNames aVars rVars statesWithoutGeneTransitions numNonTransitionsEnforced
+      let manyNonTransitionsEnforced = manyNonTransitionsEnforced gene geneNames aVars rVars statesWithoutGeneTransitions numNonTransitionsEnforced
 
-    let encodeTransition state =
-       let different = (let e, v = circuitEvaluatesToDifferent gene geneNames aVars rVars state in e &&. v)
-       different
+      let encodeTransition state =
+        let different = (let e, v = circuitEvaluatesToDifferent gene geneNames aVars rVars state in e &&. v)
+        different
 
-    let checkEdge (a, b) =
+      let checkEdge (a, b) =
         if seenEdges.Contains (a, b) then true
         else
             solver.Reset()
@@ -82,17 +84,17 @@ let private findAllowedEdges (solver : Solver) gene geneNames maxActivators maxR
             else
                 false
 
-    set [ for (a, b) in statesWithGeneTransitions do
-              if checkEdge (a, b) then yield (a, b)
-              if checkEdge (b, a) then yield (b, a) ]
+      set [ for (a, b) in statesWithGeneTransitions do
+                if checkEdge (a, b) then yield (a, b)
+                if checkEdge (b, a) then yield (b, a) ]
 
-let private findFunctions (solver : Solver) gene geneNames maxActivators maxRepressors thresholdFraction shortestPaths
+let private findFunctions (solver : Solver) gene geneNames maxActivators maxRepressors threshold shortestPaths
                           statesWithGeneTransitions statesWithoutGeneTransitions =
     let circuitEncoding, aVars, rVars = encodeUpdateFunction maxActivators maxRepressors
     
     let numNonTransitionsEnforced =
         let max = statesWithoutGeneTransitions |> Set.count
-        if thresholdFraction = 0 then max else max - max / thresholdFraction
+        max * threshold / 100
 
     let encodeTransition (stateA, stateB) =
         if not (Set.contains (stateA, stateB) statesWithGeneTransitions || Set.contains (stateB, stateA) statesWithGeneTransitions)
@@ -102,7 +104,7 @@ let private findFunctions (solver : Solver) gene geneNames maxActivators maxRepr
             let differentA = (let e, v = circuitEvaluatesToDifferent gene geneNames aVars rVars stateA in e &&. v)
             differentA
 
-    let encodePath (path : State list) =
+    let encodePath path =
         let f (formula, u) v = (And [| formula; encodeTransition (u, v) |], v)
         List.fold f (True, List.head path) (List.tail path) |> fst
     
