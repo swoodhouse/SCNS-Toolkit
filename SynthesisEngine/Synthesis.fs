@@ -46,43 +46,43 @@ let private findAllowedEdges (solver : Solver) gene geneNames maxActivators maxR
       let circuitEncoding, aVars, rVars = encodeUpdateFunction maxActivators maxRepressors
 
       let numNonTransitionsEnforced =
-        let max = statesWithoutGeneTransitions |> Set.count
-        max * threshold / 100
+          let max = statesWithoutGeneTransitions |> Set.count
+          max * threshold / 100
 
       let manyNonTransitionsEnforced = manyNonTransitionsEnforced gene geneNames aVars rVars statesWithoutGeneTransitions numNonTransitionsEnforced
 
       let encodeTransition state =
-        let different = (let e, v = circuitEvaluatesToDifferent gene geneNames aVars rVars state in e &&. v)
-        different
+          let different = (let e, v = circuitEvaluatesToDifferent gene geneNames aVars rVars state in e &&. v)
+          different
 
       let checkEdge (a, b) =
-        if seenEdges.Contains (a, b) then true
-        else
-            solver.Reset()
-            solver.Add (circuitEncoding,
-                        manyNonTransitionsEnforced,
-                        encodeTransition a)
+          if seenEdges.Contains (a, b) then true
+          else
+              solver.Reset()
+              solver.Add (circuitEncoding,
+                          manyNonTransitionsEnforced,
+                          encodeTransition a)
 
-            if solver.Check() = Status.SATISFIABLE then
-                let m = solver.Model
+              if solver.Check() = Status.SATISFIABLE then
+                  let m = solver.Model
 
-                let activatorDecls = Array.filter (fun (d : FuncDecl) -> Set.contains (d.Name.ToString()) activatorVars) m.ConstDecls |> Array.sortBy (fun d -> d.Name.ToString().Remove(0,1) |> int)
-                let repressorDecls = Array.filter (fun (d : FuncDecl) -> Set.contains (d.Name.ToString()) repressorVars) m.ConstDecls |> Array.sortBy (fun d -> d.Name.ToString().Remove(0,1) |> int)
-                let activatorAssignment = activatorDecls |> Seq.map (fun d -> System.Int32.Parse(m.[d].ToString()))
-                let repressorAssignment = repressorDecls |> Seq.map (fun d -> System.Int32.Parse(m.[d].ToString()))
+                  let activatorDecls = Array.filter (fun (d : FuncDecl) -> Set.contains (d.Name.ToString()) activatorVars) m.ConstDecls |> Array.sortBy (fun d -> d.Name.ToString().Remove(0,1) |> int)
+                  let repressorDecls = Array.filter (fun (d : FuncDecl) -> Set.contains (d.Name.ToString()) repressorVars) m.ConstDecls |> Array.sortBy (fun d -> d.Name.ToString().Remove(0,1) |> int)
+                  let activatorAssignment = activatorDecls |> Seq.map (fun d -> System.Int32.Parse(m.[d].ToString()))
+                  let repressorAssignment = repressorDecls |> Seq.map (fun d -> System.Int32.Parse(m.[d].ToString()))
 
-                let circuit = solutionToCircuit geneNames activatorAssignment repressorAssignment
+                  let circuit = solutionToCircuit geneNames activatorAssignment repressorAssignment
 
-                for (a, b) in statesWithGeneTransitions do
-                    if Circuit.evaluate circuit a.Values <> (Map.find gene a.Values) then
-                        seenEdges.Add (a, b) |> ignore
+                  for (a, b) in statesWithGeneTransitions do
+                      if Circuit.evaluate circuit a.Values <> (Map.find gene a.Values) then
+                          seenEdges.Add (a, b) |> ignore
 
-                    if Circuit.evaluate circuit b.Values <> (Map.find gene b.Values) then
-                        seenEdges.Add (b, a) |> ignore
+                      if Circuit.evaluate circuit b.Values <> (Map.find gene b.Values) then
+                          seenEdges.Add (b, a) |> ignore
 
-                true
-            else
-                false
+                  true
+              else
+                  false
 
       set [ for (a, b) in statesWithGeneTransitions do
                 if checkEdge (a, b) then yield (a, b)
