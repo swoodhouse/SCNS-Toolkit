@@ -38,7 +38,7 @@ fsi.exe --exec constructSTG.fsx input.csv 25 outputStates.csv outputEdges.csv ou
 
 On Windows, `fsi.exe` can be found in `C:\Program Files (x86)\Microsoft SDKs\F#\<version>\Framework\<version>\` after installing F#.
 
-On Linux or Mac OS X, substitute ``fsharpi`` for ``fsi.exe``.
+On Linux or Mac OS X, substitute ``fsharpi`` for ``fsi.exe``. Note: There is a bug in Mono 4.0.3 that currently breaks constructSTG.fsx.
 
 ### genysis_perturbations.R
 R script for Linux or Mac OS X which automates the process of running GenYsis (http://lsisrv5.epfl.ch/lsi/~garg/genysis_v2.html) on a model and performing all single-gene perturbations. The perturbed models are then compared to the wild-type model in terms of alterations to the stable states that the model is able to reach.
