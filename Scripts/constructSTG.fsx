@@ -59,7 +59,7 @@ let states = discretise rows
 let map = toUniqueBitvectors states
 let numGenes = Array.length genes
 
-let allOnes = if numGenes = 64 then System.UInt64.MaxValue else pown 2UL numGenes - 1UL
+let allOnes = System.UInt64.MaxValue >>> (64 - numGenes)
 
 let possibleOneNeighbours state =
     let flipRightmost0 i = i ||| i + 1UL
