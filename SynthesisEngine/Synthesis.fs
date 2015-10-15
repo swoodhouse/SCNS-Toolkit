@@ -110,8 +110,9 @@ let private findFunctions (solver : Solver) gene geneNames maxActivators maxRepr
     
     let pathsEncoding = if Seq.isEmpty shortestPaths then True else
                         And [| for paths in shortestPaths do
-                                   yield Or [| for path in paths do
-                                                   yield encodePath path |] |]
+                                   if not <| Seq.isEmpty paths then
+                                       yield Or [| for path in paths do
+                                                       yield encodePath path |] |]
 
     solver.Reset()
     solver.Add (circuitEncoding,
