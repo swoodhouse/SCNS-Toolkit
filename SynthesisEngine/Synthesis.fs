@@ -120,8 +120,7 @@ let private findFunctions (solver : Solver) gene geneNames maxActivators maxRepr
                 pathsEncoding,
                 manyNonTransitionsEnforced gene geneNames aVars rVars statesWithoutGeneTransitions numNonTransitionsEnforced)
 
-    seq { //while solver.Check() = Status.SATISFIABLE do
-          if solver.Check() = Status.SATISFIABLE then
+    seq { while solver.Check() = Status.SATISFIABLE do
               let m = solver.Model
 
               let activatorDecls = Array.filter (fun (d : FuncDecl) ->
