@@ -110,7 +110,8 @@ let private findFunctions (solver : Solver) gene geneNames maxActivators maxRepr
     
     let pathsEncoding = if Seq.isEmpty shortestPaths then True else
                         And [| for paths in shortestPaths do
-                                   if not <| Seq.isEmpty paths then
+                                   if Seq.isEmpty paths then True
+                                   else
                                        yield Or [| for path in paths do
                                                        yield encodePath path |] |]
 
@@ -119,7 +120,8 @@ let private findFunctions (solver : Solver) gene geneNames maxActivators maxRepr
                 pathsEncoding,
                 manyNonTransitionsEnforced gene geneNames aVars rVars statesWithoutGeneTransitions numNonTransitionsEnforced)
 
-    seq { while solver.Check() = Status.SATISFIABLE do
+    seq { //while solver.Check() = Status.SATISFIABLE do
+          if solver.Check() = Status.SATISFIABLE then
               let m = solver.Model
 
               let activatorDecls = Array.filter (fun (d : FuncDecl) ->
