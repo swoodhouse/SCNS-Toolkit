@@ -110,7 +110,7 @@ let private findFunctions (solver : Solver) gene geneNames maxActivators maxRepr
     
     let pathsEncoding = if Seq.isEmpty shortestPaths then True else
                         And [| for paths in shortestPaths do
-                                   if Seq.isEmpty paths then True
+                                   if Seq.isEmpty paths then yield True
                                    else
                                        yield Or [| for path in paths do
                                                        yield encodePath path |] |]
@@ -165,7 +165,7 @@ let synthesise geneParameters statesWithGeneTransitions statesWithoutGeneTransit
                                            for path in shortestPaths.[j] do
                                                match path with
                                                | [] -> ()
-                                               | l -> if List.nth l (List.length l - 1) = targetStates.[i] then yield l ] |]
+                                               | l -> if List.item (List.length l - 1) l = targetStates.[i] then yield l ] |]
 
     geneParameters |> Seq.iter (fun (g, (a, r, t)) ->
                                   let file = outputDir + "/" + g + ".txt"

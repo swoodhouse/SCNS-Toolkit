@@ -14,12 +14,12 @@ let [<Literal>] private AND = 0
 let [<Literal>] private OR = 1
 let private NOTHING = NUM_GENES + 2
 let private GENE_IDS = seq {2 .. (NOTHING - 1)}
-let private indexToName i geneNames = Seq.nth (i - 2) geneNames
+let private indexToName i geneNames = Seq.item (i - 2) geneNames
 
-let makeCircuitVar = let numBits = (uint32 << ceil <| System.Math.Log(float NUM_GENES, 2.0)) + 1u
+let makeCircuitVar = let numBits = (uint32 << ceil <| System.Math.Log(float NUM_GENES, 2.0)) + 3u
                      fun name -> BitVec (name, numBits)
 
-let makeEnforcedVar = let numBits = (uint32 << ceil <| System.Math.Log(float NUM_STATES, 2.0)) + 1u
+let makeEnforcedVar = let numBits = (uint32 << ceil <| System.Math.Log(float NUM_STATES, 2.0)) + 3u
                       fun name -> BitVec (name, numBits)
 
 let private variableDomains lowerBound upperBound var =
@@ -158,7 +158,7 @@ let circuitEvaluatesToDifferent gene geneNames aVars rVars state =
 let solutionToCircuit geneNames activatorAssignment repressorAssignment =
     let toCircuit assignment =
         let rec toCircuit i =
-            match Seq.nth i assignment with
+            match Seq.item i assignment with
             | AND -> Circuit.And (toCircuit <| leftChild i, toCircuit <| rightChild i)
             | OR -> Circuit.Or (toCircuit <| leftChild i, toCircuit <| rightChild i)
             | n when n = NOTHING -> failwith "solutionToCircuit pattern match error"
