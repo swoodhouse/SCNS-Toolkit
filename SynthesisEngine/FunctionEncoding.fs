@@ -93,7 +93,9 @@ let encodeUpdateFunction maxActivators maxRepressors =
 
                                  parentsOfNothingArentGates a r
                                  parentsOfRestAreGates a r
-                                 variablesDoNotAppearMoreThanOnce (List.ofSeq <| a ++ r)
+
+                                 variablesDoNotAppearMoreThanOnce (List.ofSeq a)
+                                 variablesDoNotAppearMoreThanOnce (List.ofSeq r)
                                     
                                  And [| for i in 1 .. 2 .. 5 -> enforceSiblingLexigraphicalOrdering a.[i] a.[i + 1] |]
                                  And [| for i in 1 .. 2 .. 5 -> enforceSiblingLexigraphicalOrdering r.[i] r.[i + 1] |]
