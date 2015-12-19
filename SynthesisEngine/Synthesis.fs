@@ -43,7 +43,7 @@ let private findAllowedEdges (solver : Solver) gene geneNames maxActivators maxR
     if threshold = 0 then Set.ofSeq statesWithGeneTransitions
     else
       let seenEdges = System.Collections.Generic.HashSet<State * State>()
-      let circuitEncoding, aVars, rVars = encodeUpdateFunction maxActivators maxRepressors
+      let circuitEncoding, aVars, rVars = encodeUpdateFunction gene geneNames maxActivators maxRepressors
 
       let numNonTransitionsEnforced =
           let max = statesWithoutGeneTransitions |> Set.count
@@ -90,7 +90,7 @@ let private findAllowedEdges (solver : Solver) gene geneNames maxActivators maxR
 
 let private findFunctions (solver : Solver) gene geneNames maxActivators maxRepressors threshold shortestPaths
                           statesWithGeneTransitions statesWithoutGeneTransitions =
-    let circuitEncoding, aVars, rVars = encodeUpdateFunction maxActivators maxRepressors
+    let circuitEncoding, aVars, rVars = encodeUpdateFunction gene geneNames maxActivators maxRepressors
     
     let numNonTransitionsEnforced =
         let max = statesWithoutGeneTransitions |> Set.count
@@ -144,7 +144,7 @@ let private findFunctions (solver : Solver) gene geneNames maxActivators maxRepr
 
               yield sprintf "%i / %i\t%s" numEnforced max (Circuit.printCircuit circuit) }
 
-let synthesise geneParameters statesWithGeneTransitions statesWithoutGeneTransitions initialStates targetStates outputDir =
+let synthesise geneParameters statesWithGeneTransitions statesWithoutGeneTransitions initialStates targetStates outputDir oneSolution =
     let solver = Solver()
 
     let geneNames = Map.keys geneParameters
@@ -171,5 +171,7 @@ let synthesise geneParameters statesWithGeneTransitions statesWithoutGeneTransit
                                   let file = outputDir + "/" + g + ".txt"
                                   System.IO.File.WriteAllText(file, "")
                                   let circuits = findFunctions solver g geneNames a r t invertedPaths (Map.find g statesWithGeneTransitions) (Map.find g statesWithoutGeneTransitions)
-                                  for circuit in circuits do
-                                      System.IO.File.AppendAllText(file, circuit + "\n"))
+                                  if oneSolution then
+                                      System.IO.File.WriteAllText(file, Seq.head circuits)
+                                  else for circuit in circuits do
+                                          System.IO.File.AppendAllText(file, circuit + "\n"))

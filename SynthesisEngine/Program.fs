@@ -4,7 +4,8 @@ open Data
 open FSharp.Data
 open FSharpx.Collections
 
-let synth (statesFilename : string) (edgesFilename : string) (parametersFilename : string) initialStatesFilename targetStatesFilename outputDir =
+let synth (statesFilename : string) (edgesFilename : string) (parametersFilename : string) initialStatesFilename targetStatesFilename outputDir
+          oneSolution =
     let geneParameters = CsvFile.Load(parametersFilename).Rows
                        |> Seq.map (fun (row : CsvRow) -> row.GetColumn 0, (System.Int32.Parse <| row.GetColumn 1,
                                                                            System.Int32.Parse <| row.GetColumn 2,
@@ -40,15 +41,15 @@ let synth (statesFilename : string) (edgesFilename : string) (parametersFilename
     let initialStates = Map.values states |> Seq.filter (fun (s : State) -> Set.contains s.Name initialStates) |> Array.ofSeq
     let targetStates = Map.values states |> Seq.filter (fun (s : State) -> Set.contains s.Name targetStates) |> Array.ofSeq
 
-    Synthesis.synthesise geneParameters statesWithGeneTransitions statesWithoutGeneTransitions initialStates targetStates outputDir
+    Synthesis.synthesise geneParameters statesWithGeneTransitions statesWithoutGeneTransitions initialStates targetStates outputDir oneSolution
     
 [<EntryPoint>]
 let main args =
-    if Array.length args <> 6 then
+    if Array.length args <> 6 && Array.length args <> 7  then
         failwith "Incorrect number of arguments. Correct format:\n\
                   SynthesisEngine.exe cmpStates.csv cmpEdges.csv cmpParameters.csv \
-                  cmp_initial_states.txt cmp_target_states.txt <output_directory>"
+                  cmp_initial_states.txt cmp_target_states.txt <output_directory> [-oneSolution]"
     
-    synth args.[0] args.[1] args.[2] args.[3] args.[4] args.[5]
+    synth args.[0] args.[1] args.[2] args.[3] args.[4] args.[5] (Array.length args = 7)
 
     0

@@ -15,6 +15,7 @@ let [<Literal>] private OR = 1
 let private NOTHING = NUM_GENES + 2
 let private GENE_IDS = seq {2 .. (NOTHING - 1)}
 let private indexToName i geneNames = Seq.item (i - 2) geneNames
+let private nameToIndex g geneNames = Seq.findIndex ((=) g) geneNames + 2
 
 let makeCircuitVar = let numBits = (uint32 << ceil <| System.Math.Log(float NUM_GENES, 2.0)) + 3u
                      fun name -> BitVec (name, numBits)
@@ -81,7 +82,11 @@ let private fixMaxInputs v max =
 let private fixMaxActivators = fixMaxInputs "a"
 let private fixMaxRepressors = fixMaxInputs "r"
 
-let encodeUpdateFunction maxActivators maxRepressors =
+let private isNotRepressor gene geneNames (rVars : BitVec []) =
+    let gene = nameToIndex gene geneNames
+    Array.map ((<>.) gene) rVars |> And
+
+let encodeUpdateFunction gene geneNames maxActivators maxRepressors =
     let a = [| for i in 1..7 -> makeCircuitVar (sprintf "a%i" i) |]
     let r = [| for i in 1..7 -> makeCircuitVar (sprintf "r%i" i) |]
 
@@ -96,6 +101,7 @@ let encodeUpdateFunction maxActivators maxRepressors =
 
                                  variablesDoNotAppearMoreThanOnce (List.ofSeq a)
                                  variablesDoNotAppearMoreThanOnce (List.ofSeq r)
+                                 isNotRepressor gene geneNames r
                                     
                                  And [| for i in 1 .. 2 .. 5 -> enforceSiblingLexigraphicalOrdering a.[i] a.[i + 1] |]
                                  And [| for i in 1 .. 2 .. 5 -> enforceSiblingLexigraphicalOrdering r.[i] r.[i + 1] |]
