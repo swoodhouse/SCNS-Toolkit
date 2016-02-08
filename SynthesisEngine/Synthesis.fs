@@ -165,7 +165,7 @@ let synthesise geneParameters statesWithGeneTransitions statesWithoutGeneTransit
                                            for path in shortestPaths.[j] do
                                                match path with
                                                | [] -> ()
-                                               | l -> if List.item (List.length l - 1) l = targetStates.[i] then yield l ] |]
+                                               | l -> if List.nth l (List.length l - 1) = targetStates.[i] then yield l ] |]
 
     geneParameters |> Seq.iter (fun (g, (a, r, t)) ->
                                   let file = outputDir + "/" + g + ".txt"
