@@ -18,7 +18,7 @@ let synth (statesFilename : string) (edgesFilename : string) (parametersFilename
 
     let states = statesCsv.Rows
               |> Seq.map (fun (row : CsvRow) -> let name = row.GetColumn 0
-                                                let values = Array.map (System.Boolean.Parse) row.Columns.[1..]
+                                                let values = Array.map System.Boolean.Parse row.Columns.[1..]
                                                 (name, { Name = name
                                                          Values = Array.zip geneNames values |> Map.ofArray }))
               |> Map.ofSeq

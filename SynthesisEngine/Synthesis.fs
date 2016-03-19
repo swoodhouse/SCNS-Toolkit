@@ -38,55 +38,52 @@ let private manyNonTransitionsEnforced gene geneNames aVars rVars statesWithoutG
 
         askNonTransitions &&. manyEnforced
 
-let private findAllowedEdges (solver : Solver) gene geneNames maxActivators maxRepressors threshold
-                             statesWithGeneTransitions statesWithoutGeneTransitions =
-    if threshold = 0 then Set.ofSeq statesWithGeneTransitions
-    else
-      let seenEdges = System.Collections.Generic.HashSet<State * State>()
-      let circuitEncoding, aVars, rVars = encodeUpdateFunction gene geneNames maxActivators maxRepressors
+let private findAllowedEdges (solver : Solver) gene geneNames maxActivators maxRepressors threshold (statesWithGeneTransitions : Set<State * State>) statesWithoutGeneTransitions =
+    let temp1, temp2 = statesWithGeneTransitions |> Set.toList |> List.unzip
+    let mutable edges = Set.ofList temp1 + Set.ofList temp2
+    let circuitEncoding, aVars, rVars = encodeUpdateFunction gene geneNames maxActivators maxRepressors
 
-      let numNonTransitionsEnforced =
-          let max = statesWithoutGeneTransitions |> Set.count
-          max * threshold / 100
+    let numNonTransitionsEnforced =
+        let max = statesWithoutGeneTransitions |> Set.count
+        max * threshold / 100
 
-      let manyNonTransitionsEnforced = manyNonTransitionsEnforced gene geneNames aVars rVars statesWithoutGeneTransitions numNonTransitionsEnforced
+    let manyNonTransitionsEnforced = manyNonTransitionsEnforced gene geneNames aVars rVars statesWithoutGeneTransitions numNonTransitionsEnforced
 
-      let encodeTransition state =
-          let different = (let e, v = circuitEvaluatesToDifferent gene geneNames aVars rVars state in e &&. v)
-          different
+    let encodeTransition state =
+        circuitEvaluatesToDifferent gene geneNames aVars rVars state
 
-      let checkEdge (a, b) =
-          if seenEdges.Contains (a, b) then true
-          else
-              solver.Reset()
-              solver.Add (circuitEncoding,
-                          manyNonTransitionsEnforced,
-                          encodeTransition a)
+    let encodeTransitions states =
+        let encodings, evaluations = Seq.map encodeTransition states |> Array.ofSeq |> Array.unzip
+        And encodings &&. Or evaluations
 
-              if solver.Check() = Status.SATISFIABLE then
-                  let m = solver.Model
-
-                  let activatorDecls = Array.filter (fun (d : FuncDecl) -> Set.contains (d.Name.ToString()) activatorVars) m.ConstDecls |> Array.sortBy (fun d -> d.Name.ToString().Remove(0,1) |> int)
-                  let repressorDecls = Array.filter (fun (d : FuncDecl) -> Set.contains (d.Name.ToString()) repressorVars) m.ConstDecls |> Array.sortBy (fun d -> d.Name.ToString().Remove(0,1) |> int)
-                  let activatorAssignment = activatorDecls |> Seq.map (fun d -> System.Int32.Parse(m.[d].ToString()))
-                  let repressorAssignment = repressorDecls |> Seq.map (fun d -> System.Int32.Parse(m.[d].ToString()))
-
-                  let circuit = solutionToCircuit geneNames activatorAssignment repressorAssignment
-
-                  for (a, b) in statesWithGeneTransitions do
-                      if Circuit.evaluate circuit a.Values <> (Map.find gene a.Values) then
-                          seenEdges.Add (a, b) |> ignore
-
-                      if Circuit.evaluate circuit b.Values <> (Map.find gene b.Values) then
-                          seenEdges.Add (b, a) |> ignore
-
-                  true
+    let mutable stop = false
+    set [ while not stop do
+              if Set.isEmpty edges then
+                  stop <- true
               else
-                  false
+                  solver.Reset()
+                  solver.Add (circuitEncoding,
+                              manyNonTransitionsEnforced,
+                              encodeTransitions edges)
 
-      set [ for (a, b) in statesWithGeneTransitions do
-                if checkEdge (a, b) then yield (a, b)
-                if checkEdge (b, a) then yield (b, a) ]
+                  if solver.Check() = Status.SATISFIABLE then
+                      let m = solver.Model
+
+                      let edgeNames = Set.map (fun (s : State) -> s.Name) edges
+
+                      let edgeDecls = Array.filter (fun (d : FuncDecl) -> d.Name.ToString().StartsWith "circuit_" && Set.contains (d.Name.ToString().Replace("circuit_", "")) edgeNames) m.ConstDecls
+                                   |> Array.filter (fun d -> System.Boolean.Parse(m.[d].ToString()) = (let state = Seq.find (fun (a : State) -> a.Name = (d.Name.ToString().Replace("circuit_", ""))) edges
+                                                                                                       in not (Map.find gene state.Values)))
+                                   |> Array.map (fun (d : FuncDecl) -> d.Name.ToString().Replace("circuit_", ""))
+                                   |> Set.ofArray
+                      let trueEdges = edges |> Set.filter (fun a -> Set.contains a.Name edgeDecls)
+
+                      edges <- edges - trueEdges
+                      for (a, b) in statesWithGeneTransitions do
+                          if Set.contains a trueEdges then yield (a, b)
+                          if Set.contains b trueEdges then yield (b, a)
+                  else
+                      stop <- true ]
 
 let private findFunctions (solver : Solver) gene geneNames maxActivators maxRepressors threshold shortestPaths
                           statesWithGeneTransitions statesWithoutGeneTransitions =
@@ -171,7 +168,6 @@ let synthesise geneParameters statesWithGeneTransitions statesWithoutGeneTransit
                                   let file = outputDir + "/" + g + ".txt"
                                   System.IO.File.WriteAllText(file, "")
                                   let circuits = findFunctions solver g geneNames a r t invertedPaths (Map.find g statesWithGeneTransitions) (Map.find g statesWithoutGeneTransitions)
-                                  if oneSolution then
-                                      System.IO.File.WriteAllText(file, Seq.head circuits)
-                                  else for circuit in circuits do
-                                          System.IO.File.AppendAllText(file, circuit + "\n"))
+                                  let circuits = if oneSolution then Seq.truncate 1 circuits else circuits
+                                  for circuit in circuits do
+                                      System.IO.File.AppendAllText(file, circuit + "\n"))
