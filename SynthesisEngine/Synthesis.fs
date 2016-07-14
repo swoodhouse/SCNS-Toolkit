@@ -40,7 +40,7 @@ let private manyNonTransitionsEnforced gene geneNames aVars rVars statesWithoutG
 
 let private findAllowedEdges (solver : Solver) gene geneNames maxActivators maxRepressors threshold (statesWithGeneTransitions : Set<State * State>) statesWithoutGeneTransitions =
     let temp1, temp2 = statesWithGeneTransitions |> Set.toList |> List.unzip
-    let mutable edges = Set.ofList temp1 + Set.ofList temp2
+    let edges = ref (Set.ofList temp1 + Set.ofList temp2)
     let circuitEncoding, aVars, rVars = encodeUpdateFunction gene geneNames maxActivators maxRepressors
 
     let numNonTransitionsEnforced =
@@ -56,34 +56,34 @@ let private findAllowedEdges (solver : Solver) gene geneNames maxActivators maxR
         let encodings, evaluations = Seq.map encodeTransition states |> Array.ofSeq |> Array.unzip
         And encodings &&. Or evaluations
 
-    let mutable stop = false
-    set [ while not stop do
-              if Set.isEmpty edges then
-                  stop <- true
+    let stop = ref false
+    set [ while not !stop do
+              if Set.isEmpty !edges then
+                  stop := true
               else
                   solver.Reset()
                   solver.Add (circuitEncoding,
                               manyNonTransitionsEnforced,
-                              encodeTransitions edges)
+                              encodeTransitions !edges)
 
                   if solver.Check() = Status.SATISFIABLE then
                       let m = solver.Model
 
-                      let edgeNames = Set.map (fun (s : State) -> s.Name) edges
+                      let edgeNames = Set.map (fun (s : State) -> s.Name) !edges
 
                       let edgeDecls = Array.filter (fun (d : FuncDecl) -> d.Name.ToString().StartsWith "circuit_" && Set.contains (d.Name.ToString().Replace("circuit_", "")) edgeNames) m.ConstDecls
-                                   |> Array.filter (fun d -> System.Boolean.Parse(m.[d].ToString()) = (let state = Seq.find (fun (a : State) -> a.Name = (d.Name.ToString().Replace("circuit_", ""))) edges
+                                   |> Array.filter (fun d -> System.Boolean.Parse(m.[d].ToString()) = (let state = Seq.find (fun (a : State) -> a.Name = (d.Name.ToString().Replace("circuit_", ""))) !edges
                                                                                                        in not (Map.find gene state.Values)))
                                    |> Array.map (fun (d : FuncDecl) -> d.Name.ToString().Replace("circuit_", ""))
                                    |> Set.ofArray
-                      let trueEdges = edges |> Set.filter (fun a -> Set.contains a.Name edgeDecls)
+                      let trueEdges = !edges |> Set.filter (fun a -> Set.contains a.Name edgeDecls)
 
-                      edges <- edges - trueEdges
+                      edges := !edges - trueEdges
                       for (a, b) in statesWithGeneTransitions do
                           if Set.contains a trueEdges then yield (a, b)
                           if Set.contains b trueEdges then yield (b, a)
                   else
-                      stop <- true ]
+                      stop := true ]
 
 let private findFunctions (solver : Solver) gene geneNames maxActivators maxRepressors threshold shortestPaths
                           statesWithGeneTransitions statesWithoutGeneTransitions =
