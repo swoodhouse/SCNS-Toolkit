@@ -4,26 +4,17 @@ open System.Collections.Generic
 
 type private Cursor<'a when 'a : comparison> = {
    Focus: 'a
-   Previous: Map<'a, 'a> }
+   Previous: 'a list }
 
 let private neighbours graph visited cursor =
     if not <| Map.containsKey cursor.Focus graph then Seq.empty
     else
         seq { for neighbour in Map.find cursor.Focus graph do
                 if not <| Set.contains neighbour visited then
-                  yield { Focus = neighbour; Previous = Map.add neighbour cursor.Focus cursor.Previous } }
-
-let private previousToPath target previous =
-    let rec previousToPath target path =
-        if not <| Map.containsKey target previous then
-            path
-        else
-            previousToPath (Map.find target previous) (target :: path)
-
-    previousToPath target []
+                  yield { Focus = neighbour; Previous = cursor.Focus :: cursor.Previous } }
 
 let shortestPathMultiSink graph source sinks =
-  let q = Queue<Cursor<'a>>([{Focus = source; Previous = Map.empty}])
+  let q = Queue<Cursor<'a>>([{Focus = source; Previous = []}])
   let visited = HashSet<'a>()
 
   [ while q.Count > 0 && not <| visited.IsSupersetOf sinks do
@@ -32,4 +23,4 @@ let shortestPathMultiSink graph source sinks =
           if not <| visited.Contains v.Focus then
               visited.Add(v.Focus) |> ignore
               q.Enqueue(v)
-              if Set.contains v.Focus sinks then yield source :: previousToPath v.Focus v.Previous ]
+              if Set.contains v.Focus sinks then yield List.rev (v.Focus :: v.Previous) ]
