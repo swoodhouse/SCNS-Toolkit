@@ -3,25 +3,25 @@
 networkFile = commandArgs(TRUE)
 
 # check file exists
-if (!file.exists(paste("networks/", networkFile, ".net", sep=""))) {
-  stop(paste("networks/", networkFile, ".net ", "does not exist!", sep=""))
+if (!file.exists(paste0("networks/", networkFile, ".net"))) {
+  stop(paste0("networks/", networkFile, ".net ", "does not exist!"))
 }
 
 # run genysis on unperturbed network to get WT stable states, put the result in results/
-system(paste("./genYsis -p3 -f networks/", networkFile, ".net -o results/", networkFile, sep=""))
+system(paste0("./genYsis -p3 -f networks/", networkFile, ".net -o results/", networkFile))
 
 # generate the experiments files for all genes, both KO and OE. put in experiments/
-genes = as.vector(read.table(paste("results/", networkFile, "_1", sep=""), skip=1)[, 1])
+genes = as.vector(read.table(paste0("results/", networkFile, "_1"), skip=1)[, 1])
 
 for (g in genes) {
-  sink(paste("experiments/", networkFile, "_", g, "KO.net", sep=""))
+  sink(paste0("experiments/", networkFile, "_", g, "KO.net"))
   cat("1\n")
   cat("1 0 0\n")
   cat(g)
   cat("\n")
   sink()
 
-  sink(paste("experiments/", networkFile, "_", g, "OE.net", sep=""))
+  sink(paste0("experiments/", networkFile, "_", g, "OE.net"))
   cat("1\n")
   cat("0 1 0\n")
   cat(g)
@@ -32,16 +32,16 @@ for (g in genes) {
 # run all perturbations, put results in results/networkGeneOE_i.txt
 for (g in genes) {
   for (perturbation in c("KO", "OE")) {
-    system(paste("./genYsis -p3 -f networks/", networkFile, ".net -e experiments/", networkFile, "_", g, perturbation, ".net", sep=""))
-    output.files = paste("results/", list.files("results/", paste("^", networkFile, "_SS_1_\\d+.txt", sep="")), sep="")
+    system(paste0("./genYsis -p3 -f networks/", networkFile, ".net -e experiments/", networkFile, "_", g, perturbation, ".net"))
+    output.files = paste0("results/", list.files("results/", paste0("^", networkFile, "_SS_1_\\d+.txt")))
     for (i in 1:length(output.files)) {
-      file.rename(output.files[i], paste("results/", networkFile, g, perturbation, "_", i, ".txt", sep=""))
+      file.rename(output.files[i], paste0("results/", networkFile, g, perturbation, "_", i, ".txt"))
     }
   }
 }
 
 # build the output csv
-wt.files = paste("results/", list.files("results/", paste("^", networkFile, "_\\d+", sep="")), sep="")
+wt.files = paste0("results/", list.files("results/", paste0("^", networkFile, "_\\d+")))
 load.state = function (filename) {
   state = as.matrix(read.table(filename, skip=1, header=F, row.names=1))
   if (ncol(state) > 1) {
@@ -68,10 +68,10 @@ wt.state.retained = function(perturbation.states) {
   }
 }
 
-M <- rbind(c("Gene", "Perturbation", paste("WT-S", 1:ncol(wt.states), sep=""), "Number of non-WT states introduced"))
+M <- rbind(c("Gene", "Perturbation", paste0("WT-S", 1:ncol(wt.states)), "Number of non-WT states introduced"))
 for (g in genes) {
   for (perturbation in c("KO", "OE")) {
-    perturbation.files = paste("results/", list.files("results/", paste("^", networkFile, g, perturbation, "_\\d+.txt", sep="")), sep="")
+    perturbation.files = paste0("results/", list.files("results/", paste0("^", networkFile, g, perturbation, "_\\d+.txt")))
     perturbation.states = do.call(cbind, lapply(perturbation.files, load.state))
     retained.wt.states = apply(wt.states, 2, wt.state.retained(perturbation.states))
     num.non.wt = ncol(perturbation.states) - sum(retained.wt.states)
