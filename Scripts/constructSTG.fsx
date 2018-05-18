@@ -64,10 +64,10 @@ let allOnes = System.UInt64.MaxValue >>> (64 - numGenes)
 let possibleOneNeighbours state =
     let flipRightmost0 i = i ||| i + 1UL
     let flip = ref state
-    seq { while !flip <> allOnes do
-              let newFlip = flipRightmost0 !flip
-              yield (newFlip ^^^ !flip) ||| state
-              flip := newFlip }
+    [ while !flip <> allOnes do
+          let newFlip = flipRightmost0 !flip
+          yield (newFlip ^^^ !flip) ||| state
+          flip := newFlip ]
 
 let geneChange (state : uint64) state' =
     let index = numGenes - (int <| System.Math.Log(float <| state ^^^ state', 2.0)) - 1
